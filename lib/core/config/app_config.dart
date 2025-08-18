@@ -1,7 +1,7 @@
 class AppConfig {
   // Supabase Configuration
-  static const String supabaseUrl = 'https://xolnejqgdkgyivbuithr.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvbG5lanFnZGtneWl2YnVpdGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzE5NzEsImV4cCI6MjA3MTEwNzk3MX0.oD7MwLSXhRW0G2jRk2W9UvcLATM3pimmRoJw3A10u-s';
+  static const String supabaseUrl = 'https://svnuaodvrpeuaenrcruc.supabase.co';
+  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2bnVhb2R2cnBldWFlbnJjcnVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDU0MDIsImV4cCI6MjA3MTEyMTQwMn0.aKPREuJ9DoxMS2I832sQ_r0VGUhJMjxadTDgiYv2-Ww';
   
   // App Configuration
   static const String appName = 'PuenteHumano';

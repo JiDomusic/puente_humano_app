@@ -38,6 +38,7 @@ dependencies:
   # Network & Storage
   http: ^1.1.2
   shared_preferences: ^2.2.2
+  cached_network_image: ^3.3.1
   
   # Chat & Real-time
   web_socket_channel: ^2.4.0
