@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/models/user_profile.dart';
 import '../../utils/app_localizations.dart';
@@ -83,6 +84,9 @@ class ProfileScreen extends StatelessWidget {
                       ? '${user.createdAt!.day}/${user.createdAt!.month}/${user.createdAt!.year}'
                       : 'Fecha no disponible'),
                 ]),
+                const SizedBox(height: 24),
+                // Panel de administración (solo para administradores)
+                _buildAdminSection(context, user),
               ],
             ),
           );
@@ -219,5 +223,56 @@ class ProfileScreen extends StatelessWidget {
       case UserRole.biblioteca:
         return Colors.purple;
     }
+  }
+
+  Widget _buildAdminSection(BuildContext context, UserProfile user) {
+    // Solo mostrar para administradores autorizados
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
+    
+    if (!isAdmin) {
+      return const SizedBox.shrink(); // No mostrar nada si no es admin
+    }
+    
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Administración',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepOrange,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Panel de control y monitoreo del sistema',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/admin'),
+                icon: const Icon(Icons.admin_panel_settings),
+                label: const Text('Abrir Panel de Administración'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -16,6 +16,7 @@ import '../../screens/shipments/shipment_detail_screen.dart';
 import '../../screens/libraries/libraries_screen.dart';
 import '../../screens/libraries/library_detail_screen.dart';
 import '../../screens/maps/map_screen.dart';
+import '../../screens/admin/admin_dashboard_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -134,6 +135,55 @@ class AppRouter {
         path: '/map',
         name: 'map',
         builder: (context, state) => const MapScreen(),
+      ),
+
+      // Panel de Administración (solo para administradores autorizados)
+      GoRoute(
+        path: '/admin',
+        name: 'admin',
+        builder: (context, state) {
+          final authProvider = context.read<AuthProvider>();
+          
+          // Verificar si el usuario es administrador autorizado
+          if (!authProvider.isAdmin) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Acceso Denegado'),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              body: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.security,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Acceso Restringido',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Solo administradores autorizados pueden acceder a esta sección.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          
+          return const AdminDashboardScreen();
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

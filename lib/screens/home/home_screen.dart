@@ -67,6 +67,36 @@ class _HomeScreenState extends State<HomeScreen> {
           expandedHeight: 200,
           floating: false,
           pinned: true,
+          actions: [
+            // Botón de administrador (solo para administradores autorizados)
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.isAdmin) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.admin_panel_settings,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      onPressed: () => context.go('/admin'),
+                      tooltip: 'Panel de Administración',
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             title: Text('Hola, ${user.fullName.split(' ').first}'),
             background: Container(
