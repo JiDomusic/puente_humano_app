@@ -1,8 +1,20 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
+import 'storage_service.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final StorageService _storageService = StorageService();
+  
+  // Inicializar storage al crear la instancia
+  AuthService() {
+    _initializeStorage();
+  }
+  
+  Future<void> _initializeStorage() async {
+    await _storageService.createAvatarsBucketIfNotExists();
+  }
 
   User? get currentUser => _supabase.auth.currentUser;
   bool get isLoggedIn => currentUser != null;
@@ -106,5 +118,53 @@ class AuthService {
         .from('users')
         .update(updates)
         .eq('id', currentUser!.id);
+  }
+
+  // Actualizar foto de perfil
+  Future<String?> updateProfilePhoto(File imageFile) async {
+    if (currentUser == null) throw Exception('Usuario no autenticado');
+    
+    // Obtener perfil actual para eliminar foto anterior si existe
+    final currentProfile = await getUserProfile();
+    
+    // Subir nueva foto
+    final newPhotoUrl = await _storageService.uploadProfilePhoto(
+      currentUser!.id, 
+      imageFile
+    );
+    
+    if (newPhotoUrl != null) {
+      // Actualizar URL en la base de datos
+      await updateProfile({'photo': newPhotoUrl});
+      
+      // Eliminar foto anterior si existe
+      if (currentProfile?.photo != null) {
+        await _storageService.deleteProfilePhoto(currentProfile!.photo!);
+      }
+      
+      return newPhotoUrl;
+    }
+    
+    return null;
+  }
+
+  // Eliminar foto de perfil
+  Future<bool> removeProfilePhoto() async {
+    if (currentUser == null) throw Exception('Usuario no autenticado');
+    
+    final currentProfile = await getUserProfile();
+    
+    if (currentProfile?.photo != null) {
+      // Eliminar de Storage
+      final deleted = await _storageService.deleteProfilePhoto(currentProfile!.photo!);
+      
+      if (deleted) {
+        // Actualizar base de datos
+        await updateProfile({'photo': null});
+        return true;
+      }
+    }
+    
+    return false;
   }
 }

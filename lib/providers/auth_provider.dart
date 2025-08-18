@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/auth_service.dart';
@@ -172,5 +173,44 @@ class AuthProvider extends ChangeNotifier {
   void _clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Actualizar foto de perfil
+  Future<bool> updateProfilePhoto(File imageFile) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final photoUrl = await _authService.updateProfilePhoto(imageFile);
+      if (photoUrl != null) {
+        await _loadUserProfile();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError('Error actualizando foto: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Eliminar foto de perfil
+  Future<bool> removeProfilePhoto() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final success = await _authService.removeProfilePhoto();
+      if (success) {
+        await _loadUserProfile();
+      }
+      return success;
+    } catch (e) {
+      _setError('Error eliminando foto: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/models/user_profile.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/language_toggle_button.dart';
 import 'profile_edit_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -10,11 +12,15 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Perfil'),
+        title: Text(l10n.profile),
         elevation: 0,
         actions: [
+          const LanguageToggleButton(isIconOnly: true),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
