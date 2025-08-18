@@ -1,0 +1,64 @@
+name: puente_humano
+description: "Un puente humano para que los libros lleguen a donde más se necesitan"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Supabase
+  supabase_flutter: ^2.5.6
+  
+  # UI
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.7
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Navigation
+  go_router: ^12.1.3
+  
+  # Maps & Location
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  
+  # QR & Image
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.6
+  image_picker: ^1.0.4
+  
+  # Network & Storage
+  http: ^1.1.2
+  shared_preferences: ^2.2.2
+  
+  # Chat & Real-time
+  web_socket_channel: ^2.4.0
+  
+  # Utils
+  intl: ^0.19.0
+  uuid: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+  
+  fonts:
+    - family: CustomIcons
+      fonts:
+        - asset: assets/fonts/CustomIcons.ttf
