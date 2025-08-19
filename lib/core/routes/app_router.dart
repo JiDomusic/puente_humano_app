@@ -22,14 +22,18 @@ import '../../screens/libraries/libraries_screen.dart';
 import '../../screens/libraries/library_detail_screen.dart';
 import '../../screens/maps/map_screen.dart';
 import '../../screens/admin/admin_dashboard_screen.dart';
+import '../../screens/profile/public_profile_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
       final authProvider = context.read<AuthProvider>();
+      final adminAuthProvider = context.read<AdminAuthProvider>();
       final isLoggedIn = authProvider.isLoggedIn;
       final isLoading = authProvider.isLoading;
+      final isAdmin = authProvider.isAdmin;
+      final isAdminLoggedIn = adminAuthProvider.isLoggedIn;
 
       // Si está cargando, mantener en la ruta actual
       if (isLoading) return null;
@@ -39,12 +43,24 @@ class AppRouter {
       final isPublicRoute = publicRoutes.contains(state.fullPath);
 
       // Si no está logueado y trata de acceder a ruta privada
-      if (!isLoggedIn && !isPublicRoute) {
+      if (!isLoggedIn && !isAdminLoggedIn && !isPublicRoute) {
         return '/';
       }
 
-      // Si está logueado y trata de acceder a ruta pública
-      if (isLoggedIn && isPublicRoute) {
+      // NUEVA LÓGICA: Si es admin y está logueado, redirigir al panel admin
+      if (isLoggedIn && isAdmin && !state.fullPath!.startsWith('/admin')) {
+        print('🔄 Admin detectado, redirigiendo al panel admin');
+        return '/admin';
+      }
+
+      // NUEVA LÓGICA: Si admin está logueado via AdminAuthProvider, ir al panel
+      if (isAdminLoggedIn && !state.fullPath!.startsWith('/admin')) {
+        print('🔄 AdminAuthProvider activo, redirigiendo al panel admin');
+        return '/admin';
+      }
+
+      // Si está logueado como usuario normal y trata de acceder a ruta pública
+      if (isLoggedIn && !isAdmin && isPublicRoute) {
         return '/home';
       }
 
@@ -104,6 +120,15 @@ class AppRouter {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+
+      // Perfil público de usuario
+      GoRoute(
+        path: '/user/:userId',
+        name: 'public-profile',
+        builder: (context, state) => PublicProfileScreen(
+          userId: state.pathParameters['userId']!,
+        ),
       ),
 
       // Viajes

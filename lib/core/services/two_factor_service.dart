@@ -25,7 +25,7 @@ class TwoFactorService {
   }
 
   // HASHEAR CÓDIGO PARA ALMACENAMIENTO SEGURO
-  String hashCode(String code, String salt) {
+  String hashCodeWithSalt(String code, String salt) {
     final bytes = utf8.encode(code + salt);
     final digest = sha256.convert(bytes);
     return digest.toString();
@@ -50,7 +50,7 @@ class TwoFactorService {
       // Generar código y salt
       final code = generateVerificationCode();
       final salt = generateSalt();
-      final hashedCode = hashCode(code, salt);
+      final hashedCode = hashCodeWithSalt(code, salt);
       
       // Guardar en base de datos
       await _supabase.from('verification_codes').insert({
@@ -104,7 +104,7 @@ class TwoFactorService {
       // Verificar código
       final salt = result['salt'];
       final storedHash = result['code_hash'];
-      final inputHash = hashCode(code, salt);
+      final inputHash = hashCodeWithSalt(code, salt);
 
       // Incrementar intentos
       await _supabase
@@ -193,7 +193,7 @@ class TwoFactorService {
 
       final totalCodes = stats.length;
       final successfulVerifications = stats.where((s) => s['is_used'] == true).length;
-      final failedAttempts = stats.fold<int>(0, (sum, s) => sum + (s['attempts'] ?? 0)) - successfulVerifications;
+      final failedAttempts = stats.fold<int>(0, (sum, s) => sum + ((s['attempts'] ?? 0) as int)) - successfulVerifications;
 
       return {
         'total_codes_sent': totalCodes,
@@ -269,7 +269,7 @@ class TwoFactorService {
         final salt = generateSalt();
         return {
           'user_id': userId,
-          'code_hash': hashCode(code.replaceAll('-', ''), salt),
+          'code_hash': hashCodeWithSalt(code.replaceAll('-', ''), salt),
           'salt': salt,
           'is_used': false,
           'created_at': DateTime.now().toIso8601String(),
@@ -308,7 +308,7 @@ class TwoFactorService {
       for (final backupCode in backupCodes) {
         final salt = backupCode['salt'];
         final storedHash = backupCode['code_hash'];
-        final inputHash = hashCode(cleanCode, salt);
+        final inputHash = hashCodeWithSalt(cleanCode, salt);
 
         if (inputHash == storedHash) {
           // Marcar código como usado

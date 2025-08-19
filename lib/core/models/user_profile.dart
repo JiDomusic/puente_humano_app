@@ -16,6 +16,7 @@ class UserProfile {
   final String phone;
   final String city;
   final String country;
+  final int? age;
   final double? lat;
   final double? lng;
   final String? photo;
@@ -32,6 +33,7 @@ class UserProfile {
     required this.phone,
     required this.city,
     required this.country,
+    this.age,
     this.lat,
     this.lng,
     this.photo,
@@ -53,6 +55,7 @@ class UserProfile {
       phone: json['phone'] as String,
       city: json['city'] as String,
       country: json['country'] as String,
+      age: json['age'] as int?,
       lat: json['lat']?.toDouble(),
       lng: json['lng']?.toDouble(),
       photo: json['photo'] as String?,
@@ -72,6 +75,7 @@ class UserProfile {
       'phone': phone,
       'city': city,
       'country': country,
+      'age': age,
       'lat': lat,
       'lng': lng,
       'photo': photo,
@@ -86,6 +90,7 @@ class UserProfile {
     String? phone,
     String? city,
     String? country,
+    int? age,
     double? lat,
     double? lng,
     String? photo,
@@ -101,6 +106,7 @@ class UserProfile {
       phone: phone ?? this.phone,
       city: city ?? this.city,
       country: country ?? this.country,
+      age: age ?? this.age,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       photo: photo ?? this.photo,

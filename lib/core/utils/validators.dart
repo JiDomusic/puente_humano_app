@@ -73,7 +73,7 @@ class SecurityValidators {
     
     // Debe contener al menos un carácter especial
     if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
-      return 'Debe contener al menos un carácter especial (!@#$%^&*(),.?":{}|<>)';
+      return 'Debe contener al menos un carácter especial (!@#\$%^&*(),.?":{}|<>)';
     }
     
     // Verificar patrones comunes débiles

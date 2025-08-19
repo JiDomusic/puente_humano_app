@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _ageController = TextEditingController();
   final _cityController = TextEditingController();
   final _countryController = TextEditingController();
   
@@ -36,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     _fullNameController.dispose();
     _phoneController.dispose();
+    _ageController.dispose();
     _cityController.dispose();
     _countryController.dispose();
     _pageController.dispose();
@@ -63,6 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       phone: _phoneController.text.trim(),
       city: _cityController.text.trim(),
       country: _countryController.text.trim(),
+      age: _ageController.text.isNotEmpty ? int.tryParse(_ageController.text) : null,
     );
 
     if (success && mounted) {
@@ -505,6 +508,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Por favor ingresa tu teléfono';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          TextFormField(
+            controller: _ageController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Edad (opcional)',
+              prefixIcon: Icon(Icons.cake),
+            ),
+            validator: (value) {
+              if (value != null && value.isNotEmpty) {
+                final age = int.tryParse(value);
+                if (age == null || age < 16 || age > 100) {
+                  return 'Ingresa una edad válida (16-100)';
+                }
               }
               return null;
             },

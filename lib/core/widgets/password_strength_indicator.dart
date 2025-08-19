@@ -45,7 +45,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
         
         if (showTips && password.isNotEmpty) ...[
           const SizedBox(height: 12),
-          _buildPasswordTips(),
+          _buildPasswordTips(context),
         ],
       ],
     );
@@ -66,7 +66,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
     }
   }
 
-  Widget _buildPasswordTips() {
+  Widget _buildPasswordTips(BuildContext context) {
     final tips = <String, bool>{
       'Al menos 8 caracteres': password.length >= 8,
       'Incluye minúscula (a-z)': password.contains(RegExp(r'[a-z]')),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/admin_service.dart';
+import '../../providers/admin_auth_provider.dart';
 import 'users_management_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -54,7 +56,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             tooltip: 'Actualizar datos',
           ),
           IconButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () async {
+              final adminAuthProvider = context.read<AdminAuthProvider>();
+              await adminAuthProvider.adminLogout();
+              if (mounted) {
+                context.go('/');
+              }
+            },
             icon: const Icon(Icons.logout),
             tooltip: 'Salir del panel',
           ),

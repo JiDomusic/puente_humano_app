@@ -59,6 +59,7 @@ class ProfileScreen extends StatelessWidget {
                   _buildInfoItem('Nombre', user.fullName),
                   _buildInfoItem('Email', user.email),
                   _buildInfoItem('Teléfono', user.phone),
+                  if (user.age != null) _buildInfoItem('Edad', '${user.age} años'),
                   _buildInfoItem('Rol', _getRoleDisplayName(user.role)),
                 ]),
                 const SizedBox(height: 24),

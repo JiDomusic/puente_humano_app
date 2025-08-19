@@ -38,6 +38,7 @@ class AuthService {
     required String phone,
     required String city,
     required String country,
+    int? age,
     double? lat,
     double? lng,
   }) async {
@@ -60,6 +61,7 @@ class AuthService {
         'phone': phone,
         'city': city,
         'country': country,
+        'age': age,
         'lat': lat,
         'lng': lng,
         'language': 'es',

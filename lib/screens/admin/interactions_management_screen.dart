@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/services/admin_service.dart';
 
 class InteractionsManagementScreen extends StatefulWidget {
   const InteractionsManagementScreen({super.key});
@@ -12,7 +10,6 @@ class InteractionsManagementScreen extends StatefulWidget {
 class _InteractionsManagementScreenState extends State<InteractionsManagementScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final AdminService _adminService = AdminService();
   
   // Datos de ejemplo para demostrar la estructura
   List<Map<String, dynamic>> _messages = [];
