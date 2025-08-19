@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_profile.dart';
 import 'storage_service.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final StorageService _storageService = StorageService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   
   // Inicializar storage al crear la instancia
   AuthService() {
@@ -76,8 +78,47 @@ class AuthService {
     );
   }
 
+  // Inicio de sesión con Google
+  Future<AuthResponse?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      final AuthResponse response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken,
+      );
+
+      if (response.user != null) {
+        // Verificar si el usuario ya existe en nuestra base de datos
+        final existingUser = await getUserProfile(response.user!.id);
+        
+        if (existingUser == null) {
+          // Crear perfil si no existe
+          await _createUserProfile(response.user!, {
+            'full_name': googleUser.displayName ?? 'Usuario Google',
+            'role': UserRole.donor.name,
+            'phone': '',
+            'city': '',
+            'country': '',
+            'language': 'es',
+            'photo': googleUser.photoUrl,
+          });
+        }
+      }
+
+      return response;
+    } catch (e) {
+      throw Exception('Error al iniciar sesión con Google: $e');
+    }
+  }
+
   // Cerrar sesión
   Future<void> signOut() async {
+    await _googleSignIn.signOut();
     await _supabase.auth.signOut();
   }
 

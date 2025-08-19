@@ -12,8 +12,8 @@ class AppConfig {
   static const bool enableChat = true;
   static const bool enableNotifications = true;
   
-  // Colors
-  static const int primaryColorValue = 0xFF2E7D32;
-  static const int secondaryColorValue = 0xFF4CAF50;
-  static const int accentColorValue = 0xFFFF6F00;
+  // Colors - Simple Black & White Theme
+  static const int primaryColorValue = 0xFF000000;
+  static const int secondaryColorValue = 0xFF424242;
+  static const int accentColorValue = 0xFF757575;
 }

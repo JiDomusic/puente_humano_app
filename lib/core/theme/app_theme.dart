@@ -7,10 +7,10 @@ class AppTheme {
   static const Color secondaryColor = Color(AppConfig.secondaryColorValue);
   static const Color accentColor = Color(AppConfig.accentColorValue);
   
-  static const Color backgroundColor = Color(0xFFF5F5F5);
+  static const Color backgroundColor = Color(0xFFFAFAFA);
   static const Color surfaceColor = Colors.white;
-  static const Color errorColor = Color(0xFFD32F2F);
-  static const Color successColor = Color(0xFF388E3C);
+  static const Color errorColor = Color(0xFF000000);
+  static const Color successColor = Color(0xFF424242);
   
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -59,9 +59,11 @@ class AppTheme {
       ),
     ),
     cardTheme: CardThemeData(
-      elevation: 2,
+      elevation: 4,
+      shadowColor: Colors.black26,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.grey.shade300, width: 1),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(

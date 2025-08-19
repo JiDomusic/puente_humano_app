@@ -170,6 +170,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.signInWithGoogle();
+
+      if (response?.user != null) {
+        await _loadUserProfile();
+        
+        // Log login exitoso con Google
+        await _analytics.logUserAction(
+          action: 'user_login_google',
+          userId: response!.user!.id,
+          details: {'provider': 'google'},
+        );
+        
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _setError('Error en inicio de sesión con Google: $e');
+      
+      // Log error de login con Google
+      await _analytics.logError(
+        error: e.toString(),
+        context: 'user_login_google',
+        details: {},
+      );
+      
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> signOut() async {
     _setLoading(true);
     try {
