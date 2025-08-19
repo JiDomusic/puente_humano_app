@@ -140,6 +140,12 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      // Verificar si el email es de un administrador
+      final isAdminEmail = await _adminService.isAdmin(email);
+      if (isAdminEmail) {
+        _setError('Los administradores no pueden registrarse como usuarios. Use el panel de admin.');
+        return false;
+      }
       final response = await _authService.signUp(
         email: email,
         password: password,
@@ -247,6 +253,13 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      // Verificar si es admin intentando loguearse
+      final isAdminEmail = await _adminService.isAdmin(email);
+      if (isAdminEmail) {
+        // Los admins no pueden loguearse como usuarios normales
+        _setError('Los administradores deben usar el panel de admin. Este es el sistema de usuarios.');
+        return false;
+      }
       final response = await _authService.signIn(
         email: email,
         password: password,

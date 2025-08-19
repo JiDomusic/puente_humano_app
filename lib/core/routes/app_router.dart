@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../screens/welcome_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
+import '../../screens/auth/admin_login_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/trips/trips_screen.dart';
@@ -30,7 +31,7 @@ class AppRouter {
       if (isLoading) return null;
 
       // Rutas públicas (no requieren autenticación)
-      final publicRoutes = ['/', '/login', '/register'];
+      final publicRoutes = ['/', '/login', '/register', '/admin-login'];
       final isPublicRoute = publicRoutes.contains(state.fullPath);
 
       // Si no está logueado y trata de acceder a ruta privada
@@ -63,6 +64,11 @@ class AppRouter {
         path: '/register',
         name: 'register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/admin-login',
+        name: 'admin-login',
+        builder: (context, state) => const AdminLoginScreen(),
       ),
 
       // Ruta principal (home)

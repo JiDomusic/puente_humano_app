@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
-import '../../core/services/analytics_service.dart';
 import '../../core/services/admin_service.dart';
-import '../../utils/app_localizations.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -14,253 +10,421 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  final AnalyticsService _analytics = AnalyticsService();
   final AdminService _adminService = AdminService();
   Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadAdminData();
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _loadAdminData() async {
     setState(() => _isLoading = true);
     
     try {
-      final stats = await _analytics.getUsageStats();
+      final stats = await _adminService.getAdminStats();
+      final users = await _adminService.getAllUsers();
+      
       setState(() {
         _stats = stats;
+        _users = users;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error loading admin data: $e');
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error cargando estadísticas: $e')),
-        );
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panel de Administración'),
-        backgroundColor: Colors.deepOrange,
+        title: const Text('Panel de Control - PuenteHumano'),
+        backgroundColor: Colors.red[600],
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () => context.go('/home'),
-            tooltip: 'Volver al Inicio',
+            onPressed: _loadAdminData,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar datos',
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadStats,
+            onPressed: () => context.go('/login'),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Salir del panel',
           ),
         ],
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            onRefresh: _loadStats,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWelcomeCard(),
-                  const SizedBox(height: 16),
-                  _buildStatsGrid(),
+                  // Estadísticas generales
+                  _buildStatsSection(),
                   const SizedBox(height: 24),
-                  _buildQuickActions(),
+                  
+                  // Lista de usuarios para revisar
+                  _buildUsersSection(),
                   const SizedBox(height: 24),
-                  _buildRecentActivity(),
+                  
+                  // Herramientas de moderación
+                  _buildModerationTools(),
                 ],
               ),
             ),
-          ),
     );
   }
 
-  Widget _buildWelcomeCard() {
-    final user = context.watch<AuthProvider>().currentUser;
-    
+  Widget _buildStatsSection() {
     return Card(
       elevation: 4,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.deepOrange, Colors.orange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.admin_panel_settings,
-                  color: Colors.white,
-                  size: 32,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '¡Bienvenido, Administrador!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        user?.fullName ?? 'Admin',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
+                Icon(Icons.analytics, color: Colors.red[600], size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Resumen del Sistema',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Sistema PuenteHumano funcionando correctamente',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Usuarios',
+                    _stats['total_users']?.toString() ?? '0',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Nuevos (7 días)',
+                    _stats['users_this_week']?.toString() ?? '0',
+                    Icons.trending_up,
+                    Colors.green,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            if (_stats['users_by_role'] != null)
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildRoleChip('Donantes', _stats['users_by_role']['donante'] ?? 0, Colors.blue),
+                  _buildRoleChip('Transportistas', _stats['users_by_role']['transportista'] ?? 0, Colors.green),
+                  _buildRoleChip('Bibliotecas', _stats['users_by_role']['biblioteca'] ?? 0, Colors.orange),
+                ],
+              ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.5,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      children: [
-        _buildStatCard(
-          'Usuarios Total',
-          '${_stats['total_users'] ?? 0}',
-          Icons.people,
-          Colors.blue,
-        ),
-        _buildStatCard(
-          'Nuevos Hoy',
-          '${_stats['users_today'] ?? 0}',
-          Icons.person_add,
-          Colors.green,
-        ),
-        _buildStatCard(
-          'Donantes',
-          '${_stats['users_by_role']?['donante'] ?? 0}',
-          Icons.volunteer_activism,
-          Colors.purple,
-        ),
-        _buildStatCard(
-          'Transportistas',
-          '${_stats['users_by_role']?['transportista'] ?? 0}',
-          Icons.local_shipping,
-          Colors.orange,
-        ),
-      ],
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildRoleChip(String role, int count, Color color) {
+    return Chip(
+      avatar: CircleAvatar(
+        backgroundColor: color,
+        child: Text(
+          count.toString(),
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+      ),
+      label: Text(role),
+      backgroundColor: color.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildUsersSection() {
     return Card(
+      elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Acciones Rápidas',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Icon(Icons.security, color: Colors.red[600], size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Moderación de Usuarios (${_users.length})',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_users.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text('No hay usuarios registrados'),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _users.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) {
+                  final user = _users[index];
+                  return _buildUserCard(user);
+                },
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserCard(Map<String, dynamic> user) {
+    final isRecent = _isRecentUser(user['created_at']);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: isRecent ? Colors.green[50] : null,
+        borderRadius: BorderRadius.circular(8),
+        border: isRecent ? Border.all(color: Colors.green[200]!) : null,
+      ),
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              backgroundColor: _getRoleColor(user['role']),
+              child: Text(
+                user['full_name']?.toString().substring(0, 1).toUpperCase() ?? '?',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (isRecent)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                user['full_name'] ?? 'Sin nombre',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (isRecent)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'NUEVO',
+                  style: TextStyle(color: Colors.white, fontSize: 10),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              user['email'] ?? 'Sin email',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              '${_getRoleDisplayName(user['role'])} • ${user['city'] ?? 'Sin ciudad'}, ${user['country'] ?? 'Sin país'}',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            if (user['phone'] != null && user['phone'].toString().isNotEmpty)
+              Text(
+                'Tel: ${user['phone']}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+            Text(
+              'Registrado: ${_formatDate(user['created_at'])}',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'view',
+              child: Row(
+                children: [
+                  Icon(Icons.visibility, size: 16, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Ver detalles completos'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Editar información'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'flag',
+              child: Row(
+                children: [
+                  Icon(Icons.flag, size: 16, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Marcar como sospechoso'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'block',
+              child: Row(
+                children: [
+                  Icon(Icons.block, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Bloquear usuario'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_forever, size: 16, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Eliminar permanentemente'),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (value) => _handleUserAction(value, user),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModerationTools() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.admin_panel_settings, color: Colors.red[600], size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Herramientas de Administración',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                _buildActionChip(
-                  'Ver Usuarios',
-                  Icons.people,
-                  () => _showUsersDialog(),
+                _buildToolButton(
+                  'Exportar Datos',
+                  Icons.download,
+                  Colors.blue,
+                  () => _exportData(),
                 ),
-                _buildActionChip(
-                  'Logs de Error',
-                  Icons.error,
-                  () => _showErrorLogsDialog(),
+                _buildToolButton(
+                  'Usuarios Sospechosos',
+                  Icons.warning,
+                  Colors.orange,
+                  () => _showSuspiciousUsers(),
                 ),
-                _buildActionChip(
+                _buildToolButton(
+                  'Limpiar Datos',
+                  Icons.cleaning_services,
+                  Colors.purple,
+                  () => _cleanupData(),
+                ),
+                _buildToolButton(
                   'Configuración',
                   Icons.settings,
-                  () => _showConfigDialog(),
-                ),
-                _buildActionChip(
-                  'Notificaciones',
-                  Icons.notifications,
-                  () => _showNotificationsDialog(),
+                  Colors.green,
+                  () => _showSettings(),
                 ),
               ],
             ),
@@ -270,119 +434,283 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildActionChip(String label, IconData icon, VoidCallback onTap) {
-    return ActionChip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onTap,
-      backgroundColor: Colors.blue[50],
-    );
-  }
-
-  Widget _buildRecentActivity() {
-    final recentActions = _stats['recent_actions'] as List? ?? [];
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Actividad Reciente',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (recentActions.isEmpty)
-              const Text('No hay actividad reciente')
-            else
-              ...recentActions.take(10).map((action) => ListTile(
-                leading: const Icon(Icons.timeline, size: 20),
-                title: Text(action['action'] ?? 'Acción desconocida'),
-                subtitle: Text(
-                  _formatTimestamp(action['timestamp']),
-                ),
-                dense: true,
-              )),
-          ],
+  Widget _buildToolButton(String title, IconData icon, Color color, VoidCallback onTap) {
+    return SizedBox(
+      width: 160,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          title,
+          style: const TextStyle(fontSize: 13),
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         ),
       ),
     );
   }
 
-  String _formatTimestamp(String? timestamp) {
-    if (timestamp == null) return 'Fecha desconocida';
+  // Métodos de utilidad
+  Color _getRoleColor(String? role) {
+    switch (role) {
+      case 'donante':
+        return Colors.blue;
+      case 'transportista':
+        return Colors.green;
+      case 'biblioteca':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getRoleDisplayName(String? role) {
+    switch (role) {
+      case 'donante':
+        return 'Donante';
+      case 'transportista':
+        return 'Transportista';
+      case 'biblioteca':
+        return 'Biblioteca';
+      default:
+        return 'Sin rol';
+    }
+  }
+
+  bool _isRecentUser(String? createdAt) {
+    if (createdAt == null) return false;
     try {
-      final date = DateTime.parse(timestamp);
-      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      final date = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      return now.difference(date).inDays <= 7;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'Fecha desconocida';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
     } catch (e) {
       return 'Fecha inválida';
     }
   }
 
-  void _showUsersDialog() {
+  // Métodos de acción
+  void _handleUserAction(String action, Map<String, dynamic> user) {
+    switch (action) {
+      case 'view':
+        _showUserDetails(user);
+        break;
+      case 'edit':
+        _editUser(user);
+        break;
+      case 'flag':
+        _flagUser(user);
+        break;
+      case 'block':
+        _blockUser(user);
+        break;
+      case 'delete':
+        _deleteUser(user);
+        break;
+    }
+  }
+
+  void _showUserDetails(Map<String, dynamic> user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Gestión de Usuarios'),
-        content: const Text('Función en desarrollo'),
+        title: Text('👤 ${user['full_name']}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow('ID del Sistema', user['id']),
+              _detailRow('Email', user['email']),
+              _detailRow('Rol', _getRoleDisplayName(user['role'])),
+              _detailRow('Teléfono', user['phone'] ?? 'No especificado'),
+              _detailRow('Ciudad', user['city'] ?? 'No especificada'),
+              _detailRow('País', user['country'] ?? 'No especificado'),
+              _detailRow('Idioma', user['language'] ?? 'No especificado'),
+              _detailRow('Calificación', '${user['average_rating'] ?? 0} ⭐'),
+              _detailRow('Registrado', _formatDate(user['created_at'])),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cerrar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _editUser(user);
+            },
+            child: const Text('Editar'),
           ),
         ],
       ),
     );
   }
 
-  void _showErrorLogsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logs de Error'),
-        content: const Text('Función en desarrollo'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+  Widget _detailRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(value ?? 'N/A'),
           ),
         ],
       ),
     );
   }
 
-  void _showConfigDialog() {
+  void _editUser(Map<String, dynamic> user) {
+    _showComingSoon('Editar usuario ${user['full_name']}');
+  }
+
+  void _flagUser(Map<String, dynamic> user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Configuración del Sistema'),
-        content: const Text('Función en desarrollo'),
+        title: const Text('🚩 Marcar como Sospechoso'),
+        content: Text('¿Marcar usuario ${user['full_name']} como sospechoso?\n\nEsto agregará una marca para revisión manual.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Usuario ${user['full_name']} marcado para revisión')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Marcar'),
           ),
         ],
       ),
     );
   }
 
-  void _showNotificationsDialog() {
+  void _blockUser(Map<String, dynamic> user) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Notificaciones'),
-        content: const Text('Función en desarrollo'),
+        title: const Text('🚫 Bloquear Usuario'),
+        content: Text('¿Bloquear usuario ${user['full_name']}?\n\nNo podrá acceder al sistema hasta ser desbloqueado.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _adminService.deactivateUser(user['id']);
+                _loadAdminData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Usuario ${user['full_name']} bloqueado')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error bloqueando usuario: $e')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Bloquear'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _deleteUser(Map<String, dynamic> user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🗑️ ELIMINAR USUARIO'),
+        content: Text(
+          '⚠️ ¿ELIMINAR PERMANENTEMENTE usuario ${user['full_name']}?\n\n'
+          '• Se eliminarán todos sus datos\n'
+          '• Se eliminarán sus donaciones/viajes\n'
+          '• Esta acción NO se puede deshacer\n\n'
+          'Solo eliminar si es spam/abuso confirmado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _adminService.deleteUser(user['id']);
+                _loadAdminData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Usuario ${user['full_name']} eliminado permanentemente')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error eliminando usuario: $e')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('ELIMINAR DEFINITIVAMENTE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exportData() {
+    _showComingSoon('Exportar datos del sistema');
+  }
+
+  void _showSuspiciousUsers() {
+    _showComingSoon('Ver usuarios marcados como sospechosos');
+  }
+
+  void _cleanupData() {
+    _showComingSoon('Herramientas de limpieza de datos');
+  }
+
+  void _showSettings() {
+    _showComingSoon('Configuración del sistema');
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature: Próximamente disponible'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
       ),
     );
   }

@@ -195,6 +195,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 16),
                 
+                // Botón para admins
+                Container(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/admin-login'),
+                    icon: Icon(Icons.admin_panel_settings, color: Colors.red[600]),
+                    label: Text(
+                      'Acceso de Administrador',
+                      style: TextStyle(color: Colors.red[600]),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: Colors.red[300]!),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
                 // Link recuperar contraseña
                 TextButton(
                   onPressed: () {

@@ -170,6 +170,32 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildWelcomeCard(user),
               const SizedBox(height: 16),
               
+              // DEBUG INFO
+              Consumer<AuthProvider>(
+                builder: (context, debugAuthProvider, child) {
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      border: Border.all(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('DEBUG INFO:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('Email: ${user.email}'),
+                        Text('IsAdmin: ${debugAuthProvider.isAdmin}'),
+                        Text('User ID: ${user.id}'),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              
               // Botón de Admin prominente
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
