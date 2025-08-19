@@ -69,28 +69,34 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 16.0 : 24.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 32),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                 
-                // Icono y título
+                // Icono y título responsivos
                 Icon(
-                  Icons.book,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
+                  Icons.library_books,
+                  size: MediaQuery.of(context).size.width < 600 ? 60 : 80,
+                  color: Colors.blue[600],
                 ),
                 
-                const SizedBox(height: 16),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                 
                 Text(
-                  'Bienvenido de vuelta',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  'PuenteHumano',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: Colors.blue[600],
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 24 : 28,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -98,22 +104,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Ingresa tus credenciales para continuar',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  'Un puente humano para que los libros\nlleguen donde más se necesitan',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 
-                const SizedBox(height: 48),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 32 : 48),
                 
-                // Campo email
+                // Campo email responsivo
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                  ),
+                  decoration: InputDecoration(
                     labelText: 'Correo electrónico',
-                    prefixIcon: Icon(Icons.email),
+                    labelStyle: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                    ),
+                    prefixIcon: const Icon(Icons.email),
+                    border: const OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                      vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -126,15 +144,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 
-                const SizedBox(height: 24),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                 
-                // Campo contraseña
+                // Campo contraseña responsivo
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
+                    labelStyle: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                    ),
                     prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                      vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                    ),
                     suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
@@ -156,83 +185,126 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
+
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 24 : 32),
                 
-                const SizedBox(height: 32),
-                
-                // Botón de login
+                // Botón de login responsivo
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
                     return ElevatedButton(
                       onPressed: authProvider.isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       child: authProvider.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                          ? SizedBox(
+                              height: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+                              width: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
                             )
-                          : const Text('Iniciar sesión'),
+                          : Text(
+                              'Iniciar Sesión',
+                              style: TextStyle(
+                                fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     );
                   },
                 ),
+
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                 
-                
-                const SizedBox(height: 24),
-                
-                // Link a registro
+                // Link a registro responsivo
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       '¿No tienes cuenta? ',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                      ),
                     ),
                     TextButton(
                       onPressed: () => context.push('/register'),
-                      child: const Text('Regístrate'),
+                      child: Text(
+                        'Regístrate',
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 
-                const SizedBox(height: 16),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
                 
-                // Botón para admins - MUY VISIBLE
+                // Botón para admins responsivo
                 Container(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => context.go('/admin-login'),
-                    icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
-                    label: const Text(
+                    icon: Icon(
+                      Icons.admin_panel_settings,
+                      color: Colors.white,
+                      size: MediaQuery.of(context).size.width < 600 ? 18 : 20,
+                    ),
+                    label: Text(
                       '👑 ACCESO DE ADMINISTRADOR',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 16,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red[600],
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(
+                        vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                      ),
                       elevation: 8,
                       shadowColor: Colors.red[300],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
                 
-                // Link recuperar contraseña
+                // Link recuperar contraseña responsivo
                 TextButton(
                   onPressed: () {
                     _showPasswordResetDialog();
                   },
-                  child: const Text('¿Olvidaste tu contraseña?'),
+                  child: Text(
+                    '¿Olvidaste tu contraseña?',
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                    ),
+                  ),
                 ),
                 
-                const Spacer(),
+                // Espaciado final flexible
+                Flexible(
+                  child: SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                ),
               ],
             ),
           ),
+        ),
         ),
       ),
     );
@@ -271,7 +343,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 final authProvider = context.read<AuthProvider>();
                 final success = await authProvider.resetPassword(emailController.text);
                 
-                if (mounted) {
+                if (mounted && context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

@@ -33,30 +33,39 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Bienvenida personalizada
-                _buildWelcomeCard(),
-                const SizedBox(height: 24),
-                
-                // Acciones rápidas para donantes
-                _buildQuickActions(),
-                const SizedBox(height: 24),
-                
-                // Mis donaciones
-                _buildMyDonations(),
-                const SizedBox(height: 24),
-                
-                // Bibliotecas cercanas
-                _buildNearbyLibraries(),
-                const SizedBox(height: 24),
-                
-                // Estadísticas personales
-                _buildPersonalStats(),
-              ],
+          body: SafeArea(
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  // Bienvenida personalizada
+                  _buildWelcomeCard(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Acciones rápidas para donantes
+                  _buildQuickActions(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Mis donaciones
+                  _buildMyDonations(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Bibliotecas cercanas
+                  _buildNearbyLibraries(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Estadísticas personales
+                  _buildPersonalStats(),
+                  
+                  // Espaciado final para navegación
+                  const SizedBox(height: 100),
+                ],
+                ),
+              ),
             ),
           ),
           bottomNavigationBar: _buildDonorNavigation(),
@@ -111,80 +120,141 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Donar Libros',
-                Icons.add_circle,
-                Colors.green,
-                () => context.push('/donations/create'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Buscar Bibliotecas',
-                Icons.search,
-                Colors.orange,
-                () => context.push('/libraries'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Ver Transportistas',
-                Icons.local_shipping,
-                Colors.purple,
-                () => context.push('/trips'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Mi Perfil',
-                Icons.person,
-                Colors.blue,
-                () => context.push('/profile'),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            if (isMobile) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionCard(
+                          'Donar Libros',
+                          Icons.add_circle,
+                          Colors.green,
+                          () => context.push('/donations/create'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Buscar Bibliotecas',
+                          Icons.search,
+                          Colors.orange,
+                          () => context.push('/libraries'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionCard(
+                          'Ver Transportistas',
+                          Icons.local_shipping,
+                          Colors.purple,
+                          () => context.push('/trips'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Mi Perfil',
+                          Icons.person,
+                          Colors.blue,
+                          () => context.push('/profile'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            } else {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildActionCard(
+                      'Donar Libros',
+                      Icons.add_circle,
+                      Colors.green,
+                      () => context.push('/donations/create'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Buscar Bibliotecas',
+                      Icons.search,
+                      Colors.orange,
+                      () => context.push('/libraries'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Ver Transportistas',
+                      Icons.local_shipping,
+                      Colors.purple,
+                      () => context.push('/trips'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Mi Perfil',
+                      Icons.person,
+                      Colors.blue,
+                      () => context.push('/profile'),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
         ),
       ],
     );
   }
 
   Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = MediaQuery.of(context).size.width < 600;
+        return InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
+          child: Container(
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
             ),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: isMobile ? 24 : 32),
+                SizedBox(height: isMobile ? 4 : 8),
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 10 : 12,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -261,9 +331,11 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 120,
+          height: MediaQuery.of(context).size.width < 600 ? 100 : 120,
           child: ListView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             children: [
               _buildLibraryCard('Biblioteca Sol', 'Mendoza', '2.3 km', Icons.school),
               _buildLibraryCard('Centro Norte', 'Mar del Plata', '5.1 km', Icons.local_library),
@@ -276,32 +348,44 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
   }
 
   Widget _buildLibraryCard(String name, String location, String distance, IconData icon) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
+      width: isMobile ? 120 : 140,
+      margin: const EdgeInsets.only(right: 8),
       child: Card(
+        elevation: 2,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(isMobile ? 8 : 12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.purple[600], size: 24),
-              const SizedBox(height: 8),
+              Icon(icon, color: Colors.purple[600], size: isMobile ? 20 : 24),
+              SizedBox(height: isMobile ? 4 : 8),
               Text(
                 name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: isMobile ? 10 : 12,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 location,
-                style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                style: TextStyle(
+                  color: Colors.grey[600], 
+                  fontSize: isMobile ? 8 : 10,
+                ),
                 textAlign: TextAlign.center,
               ),
               Text(
                 distance,
-                style: TextStyle(color: Colors.green[600], fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.green[600], 
+                  fontSize: isMobile ? 8 : 10, 
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

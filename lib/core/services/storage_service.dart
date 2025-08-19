@@ -15,7 +15,7 @@ class StorageService {
       final filePath = '$userId/$fileName';
 
       // Subir archivo a Supabase Storage
-      final String path = await _supabase.storage
+      await _supabase.storage
           .from(_avatarsBucket)
           .upload(filePath, imageFile);
 

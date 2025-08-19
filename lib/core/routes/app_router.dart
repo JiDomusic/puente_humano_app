@@ -9,6 +9,9 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/auth/admin_login_screen.dart';
 import '../../screens/home/home_screen.dart';
+import '../../screens/dashboards/donor_dashboard_screen.dart';
+import '../../screens/dashboards/transporter_dashboard_screen.dart';
+import '../../screens/dashboards/library_dashboard_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/trips/trips_screen.dart';
 import '../../screens/trips/trip_detail_screen.dart';
@@ -79,6 +82,23 @@ class AppRouter {
         builder: (context, state) => const HomeScreen(),
       ),
 
+      // Dashboards específicos por rol
+      GoRoute(
+        path: '/donor-dashboard',
+        name: 'donor-dashboard',
+        builder: (context, state) => const DonorDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/transporter-dashboard',
+        name: 'transporter-dashboard',
+        builder: (context, state) => const TransporterDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/library-dashboard',
+        name: 'library-dashboard',
+        builder: (context, state) => const LibraryDashboardScreen(),
+      ),
+
       // Perfil de usuario
       GoRoute(
         path: '/profile',
@@ -142,6 +162,108 @@ class AppRouter {
         path: '/map',
         name: 'map',
         builder: (context, state) => const MapScreen(),
+      ),
+
+      // Rutas adicionales para funcionalidades del home
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Notificaciones')),
+          body: const Center(
+            child: Text('Notificaciones - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/activity',
+        name: 'activity',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Actividad')),
+          body: const Center(
+            child: Text('Historial de actividad - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/explore',
+        name: 'explore',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Explorar')),
+          body: const Center(
+            child: Text('Explorar - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/donations/create',
+        name: 'donations-create',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Donar Libros')),
+          body: const Center(
+            child: Text('Crear donación - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/trips/create',
+        name: 'trips-create',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Crear Viaje')),
+          body: const Center(
+            child: Text('Crear viaje - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/requests/create',
+        name: 'requests-create',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Solicitar Libros')),
+          body: const Center(
+            child: Text('Solicitar libros - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/inventory',
+        name: 'inventory',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Inventario')),
+          body: const Center(
+            child: Text('Inventario - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/donors',
+        name: 'donors',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Donantes')),
+          body: const Center(
+            child: Text('Lista de donantes - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/transporters',
+        name: 'transporters',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Transportistas')),
+          body: const Center(
+            child: Text('Lista de transportistas - En desarrollo'),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/donations/received',
+        name: 'donations-received',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Donaciones Recibidas')),
+          body: const Center(
+            child: Text('Donaciones recibidas - En desarrollo'),
+          ),
+        ),
       ),
 
       // Panel de Administración (solo para administradores autorizados)

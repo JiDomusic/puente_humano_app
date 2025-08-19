@@ -58,13 +58,13 @@ class ProfileScreen extends StatelessWidget {
                 _buildInfoSection('Información Personal', [
                   _buildInfoItem('Nombre', user.fullName),
                   _buildInfoItem('Email', user.email),
-                  _buildInfoItem('Teléfono', user.phone ?? 'No especificado'),
+                  _buildInfoItem('Teléfono', user.phone),
                   _buildInfoItem('Rol', _getRoleDisplayName(user.role)),
                 ]),
                 const SizedBox(height: 24),
                 _buildInfoSection('Ubicación', [
-                  _buildInfoItem('Ciudad', user.city ?? 'No especificado'),
-                  _buildInfoItem('País', user.country ?? 'No especificado'),
+                  _buildInfoItem('Ciudad', user.city),
+                  _buildInfoItem('País', user.country),
                 ]),
                 const SizedBox(height: 24),
                 _buildInfoSection('Estadísticas', [
@@ -73,16 +73,14 @@ class ProfileScreen extends StatelessWidget {
                       ? '${user.averageRating!.toStringAsFixed(1)} ⭐'
                       : 'Sin calificaciones'),
                   _buildInfoItem('Total de Calificaciones', 
-                    '${user.ratingsCount ?? 0}'),
+                    '${user.ratingsCount}'),
                 ]),
                 const SizedBox(height: 24),
                 _buildInfoSection('Preferencias', [
                   _buildInfoItem('Idioma', 
                     user.language == 'es' ? 'Español' : 'English'),
                   _buildInfoItem('Miembro desde', 
-                    user.createdAt != null 
-                      ? '${user.createdAt!.day}/${user.createdAt!.month}/${user.createdAt!.year}'
-                      : 'Fecha no disponible'),
+                    '${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}'),
                 ]),
                 const SizedBox(height: 24),
                 // Panel de administración (solo para administradores)

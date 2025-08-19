@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../config/admin_config.dart';
 
 class AdminService {
@@ -10,40 +11,54 @@ class AdminService {
   // Verificar si un usuario es administrador
   Future<bool> isAdmin(String email) async {
     final emailLower = email.toLowerCase();
-    print('🔍 AdminService.isAdmin() verificando: $emailLower');
+    if (kDebugMode) {
+      debugPrint('🔍 AdminService.isAdmin() verificando: $emailLower');
+    }
     
     try {
       // Primero verificar en la lista hardcoded (más rápido y confiable)
       if (_authorizedAdmins.contains(emailLower)) {
-        print('✅ Usuario encontrado en lista hardcoded de admins');
+        if (kDebugMode) {
+          debugPrint('✅ Usuario encontrado en lista hardcoded de admins');
+        }
         
         // Intentar actualizar último login en la DB si existe
         try {
           await _updateLastLogin(email);
         } catch (e) {
-          print('⚠️ No se pudo actualizar último login: $e');
+          if (kDebugMode) {
+            debugPrint('⚠️ No se pudo actualizar último login: $e');
+          }
         }
         
         return true;
       }
       
       // Verificar en la base de datos como backup
-      print('🔍 Verificando en base de datos admin_users...');
+      if (kDebugMode) {
+        debugPrint('🔍 Verificando en base de datos admin_users...');
+      }
       final result = await _supabase
           .from('admin_users')
           .select('id, is_active')
           .eq('email', emailLower)
           .maybeSingle();
       
-      print('🔍 Resultado de DB admin_users: $result');
+      if (kDebugMode) {
+        debugPrint('🔍 Resultado de DB admin_users: $result');
+      }
       
       if (result != null && result['is_active'] == true) {
-        print('✅ Usuario encontrado como admin en DB');
+        if (kDebugMode) {
+          debugPrint('✅ Usuario encontrado como admin en DB');
+        }
         await _updateLastLogin(email);
         return true;
       }
       
-      print('❌ Usuario NO es admin - no encontrado en lista ni DB');
+      if (kDebugMode) {
+        debugPrint('❌ Usuario NO es admin - no encontrado en lista ni DB');
+      }
       return false;
       
     } catch (e) {

@@ -33,30 +33,39 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Bienvenida personalizada
-                _buildWelcomeCard(),
-                const SizedBox(height: 24),
-                
-                // Acciones rápidas para bibliotecas
-                _buildQuickActions(),
-                const SizedBox(height: 24),
-                
-                // Donaciones recibidas
-                _buildReceivedDonations(),
-                const SizedBox(height: 24),
-                
-                // Donaciones en camino
-                _buildIncomingDonations(),
-                const SizedBox(height: 24),
-                
-                // Estadísticas de la biblioteca
-                _buildLibraryStats(),
-              ],
+          body: SafeArea(
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  // Bienvenida personalizada
+                  _buildWelcomeCard(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Acciones rápidas para bibliotecas
+                  _buildQuickActions(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Donaciones recibidas
+                  _buildReceivedDonations(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Donaciones en camino
+                  _buildIncomingDonations(),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Estadísticas de la biblioteca
+                  _buildLibraryStats(),
+                  
+                  // Espaciado final para navegación
+                  const SizedBox(height: 100),
+                ],
+                ),
+              ),
             ),
           ),
           bottomNavigationBar: _buildLibraryNavigation(),
@@ -111,80 +120,141 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Solicitar Libros',
-                Icons.request_page,
-                Colors.purple,
-                () => context.push('/requests/create'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Ver Donantes',
-                Icons.people,
-                Colors.blue,
-                () => context.push('/donors'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                'Mi Inventario',
-                Icons.inventory_2,
-                Colors.green,
-                () => context.push('/inventory'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                'Mi Perfil',
-                Icons.account_balance,
-                Colors.orange,
-                () => context.push('/profile'),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            if (isMobile) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionCard(
+                          'Solicitar Libros',
+                          Icons.request_page,
+                          Colors.purple,
+                          () => context.push('/requests/create'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Ver Donantes',
+                          Icons.people,
+                          Colors.blue,
+                          () => context.push('/donors'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionCard(
+                          'Mi Inventario',
+                          Icons.inventory_2,
+                          Colors.green,
+                          () => context.push('/inventory'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Mi Perfil',
+                          Icons.account_balance,
+                          Colors.orange,
+                          () => context.push('/profile'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            } else {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildActionCard(
+                      'Solicitar Libros',
+                      Icons.request_page,
+                      Colors.purple,
+                      () => context.push('/requests/create'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Ver Donantes',
+                      Icons.people,
+                      Colors.blue,
+                      () => context.push('/donors'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Mi Inventario',
+                      Icons.inventory_2,
+                      Colors.green,
+                      () => context.push('/inventory'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      'Mi Perfil',
+                      Icons.account_balance,
+                      Colors.orange,
+                      () => context.push('/profile'),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
         ),
       ],
     );
   }
 
   Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = MediaQuery.of(context).size.width < 600;
+        return InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
+          child: Container(
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.3)),
             ),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: isMobile ? 24 : 32),
+                SizedBox(height: isMobile ? 4 : 8),
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 10 : 12,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -267,9 +337,11 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 140,
+          height: MediaQuery.of(context).size.width < 600 ? 120 : 140,
           child: ListView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             children: [
               _buildIncomingCard(
                 'Enciclopedias',
@@ -300,44 +372,58 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
   }
 
   Widget _buildIncomingCard(String title, String donor, String status, String date, Color color) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
+      width: isMobile ? 140 : 160,
+      margin: const EdgeInsets.only(right: 8),
       child: Card(
+        elevation: 2,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(isMobile ? 8 : 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.local_shipping, color: color, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.local_shipping, color: color, size: isMobile ? 16 : 20),
+                  SizedBox(width: isMobile ? 4 : 8),
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: isMobile ? 10 : 12,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 4 : 8),
               Text(
                 'Donante: $donor',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: isMobile ? 9 : 11, 
+                  color: Colors.grey[600],
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: isMobile ? 2 : 4),
               Text(
                 'Llegada: $date',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: isMobile ? 9 : 11, 
+                  color: Colors.grey[600],
+                ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 4 : 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 6 : 8, 
+                  vertical: isMobile ? 2 : 4,
+                ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -347,7 +433,7 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
                   style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontSize: isMobile ? 9 : 11,
                   ),
                 ),
               ),
