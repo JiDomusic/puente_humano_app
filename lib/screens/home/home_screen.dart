@@ -37,8 +37,13 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() {
                 _currentIndex = index;
               });
+              // Si hace click en el botón Admin (último índice cuando isAdmin = true)
+              if (authProvider.isAdmin && index == _getMaxIndex(user.role)) {
+                context.go('/admin');
+              }
             },
             userRole: user.role,
+            isAdmin: authProvider.isAdmin,
           ),
         );
       },
@@ -55,6 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return _buildMapView();
       case 3:
         return _buildProfileView(user);
+      case 4:
+        // El caso Admin se maneja en onTap navegando a '/admin'
+        // pero por si acaso, volvemos al dashboard
+        return _buildDashboard(user);
       default:
         return _buildDashboard(user);
     }
@@ -71,28 +80,45 @@ class _HomeScreenState extends State<HomeScreen> {
             // Botón de administrador (solo para administradores autorizados)
             Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
+                print('🔍 AppBar Admin check: isAdmin=${authProvider.isAdmin}');
+                
                 if (authProvider.isAdmin) {
+                  print('✅ Mostrando botón admin en AppBar');
                   return Container(
                     margin: const EdgeInsets.only(right: 8),
-                    child: IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.9),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        print('🔴 Botón Admin presionado');
+                        context.go('/admin');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.admin_panel_settings,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                        elevation: 5,
                       ),
-                      onPressed: () => context.go('/admin'),
-                      tooltip: 'Panel de Administración',
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.admin_panel_settings, size: 16, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'ADMIN',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
+                print('❌ No es admin, no se muestra botón');
                 return const SizedBox.shrink();
               },
             ),
@@ -143,6 +169,53 @@ class _HomeScreenState extends State<HomeScreen> {
             delegate: SliverChildListDelegate([
               _buildWelcomeCard(user),
               const SizedBox(height: 16),
+              
+              // Botón de Admin prominente
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  print('🔍 Verificando admin: isAdmin=${authProvider.isAdmin}, email=${authProvider.currentUser?.email}');
+                  
+                  if (authProvider.isAdmin) {
+                    print('✅ Mostrando botón de admin');
+                    return Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ElevatedButton.icon(
+                            onPressed: () => context.go('/admin'),
+                            icon: const Icon(
+                              Icons.admin_panel_settings,
+                              size: 24,
+                              color: Colors.white,
+                            ),
+                            label: const Text(
+                              'ACCEDER AL PANEL DE ADMINISTRACIÓN',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              
               _buildQuickActions(user),
               const SizedBox(height: 16),
               _buildStatsCard(user),
@@ -504,5 +577,10 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Escáner QR en desarrollo')),
     );
+  }
+
+  int _getMaxIndex(UserRole role) {
+    // Los roles base tienen 4 tabs (0-3), si es admin agrega uno más (4)
+    return 4; // Admin siempre será el índice 4
   }
 }

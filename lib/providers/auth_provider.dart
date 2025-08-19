@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/analytics_service.dart';
 import '../core/services/admin_service.dart';
@@ -30,12 +32,17 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _initializeAuth() async {
     _setLoading(true);
     
+    // Cargar datos en cache primero para respuesta rápida
+    await _loadCachedUserData();
+    
     // Escuchar cambios de autenticación
     _authService.authStateChanges.listen((AuthState state) async {
       if (state.event == AuthChangeEvent.signedIn) {
         await _loadUserProfile();
       } else if (state.event == AuthChangeEvent.signedOut) {
         _currentUser = null;
+        _isAdmin = false;
+        await _clearCachedUserData();
         notifyListeners();
       }
     });
@@ -54,14 +61,67 @@ class AuthProvider extends ChangeNotifier {
       
       // Verificar si es administrador
       if (_currentUser != null) {
+        print('🔍 Verificando admin para email: ${_currentUser!.email}');
         _isAdmin = await _adminService.isAdmin(_currentUser!.email);
+        print('🔍 Resultado admin: $_isAdmin');
+        
+        // Guardar en cache para carga rápida futura
+        await _cacheUserData(_currentUser!, _isAdmin);
       } else {
+        print('❌ _currentUser es null, no se puede verificar admin');
         _isAdmin = false;
       }
       
       notifyListeners();
     } catch (e) {
+      print('❌ Error en _loadUserProfile: $e');
       _setError('Error cargando perfil: $e');
+    }
+  }
+
+  // Cache methods para mejor performance
+  Future<void> _cacheUserData(UserProfile user, bool isAdmin) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_user', jsonEncode(user.toJson()));
+      await prefs.setBool('cached_is_admin', isAdmin);
+      await prefs.setInt('cached_timestamp', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Si falla el cache, no es crítico
+      print('Error caching user data: $e');
+    }
+  }
+
+  Future<void> _loadCachedUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedUser = prefs.getString('cached_user');
+      final cachedIsAdmin = prefs.getBool('cached_is_admin') ?? false;
+      final cachedTimestamp = prefs.getInt('cached_timestamp') ?? 0;
+      
+      // Solo usar cache si es reciente (menos de 1 hora)
+      final isRecent = DateTime.now().millisecondsSinceEpoch - cachedTimestamp < 3600000;
+      
+      if (cachedUser != null && isRecent) {
+        final userData = jsonDecode(cachedUser);
+        _currentUser = UserProfile.fromJson(userData);
+        _isAdmin = cachedIsAdmin;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Si falla cargar cache, continúa normal
+      print('Error loading cached user data: $e');
+    }
+  }
+
+  Future<void> _clearCachedUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cached_user');
+      await prefs.remove('cached_is_admin');
+      await prefs.remove('cached_timestamp');
+    } catch (e) {
+      print('Error clearing cached user data: $e');
     }
   }
 
@@ -93,23 +153,74 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response.user != null) {
-        await _loadUserProfile();
+        print('🔄 Usuario creado en Auth, cargando perfil...');
         
-        // Log registro exitoso
-        await _analytics.logUserAction(
-          action: 'user_registered',
-          userId: response.user!.id,
-          details: {'role': role.name, 'city': city, 'country': country},
-        );
+        // Esperar un poco para que el trigger/upsert se complete
+        await Future.delayed(const Duration(milliseconds: 1000));
         
-        // Notificación para admin
-        await _analytics.sendAdminNotification(
-          title: 'Nuevo usuario registrado',
-          message: 'Usuario $fullName se registró como ${role.name}',
-          type: 'success',
-        );
+        // Intentar cargar perfil varias veces por si hay delay
+        int attempts = 0;
+        const maxAttempts = 8;
         
-        return true;
+        while (attempts < maxAttempts && _currentUser == null) {
+          attempts++;
+          print('🔄 Intento $attempts de $maxAttempts cargar perfil...');
+          
+          await Future.delayed(Duration(milliseconds: 500 * attempts));
+          await _loadUserProfile();
+          
+          if (_currentUser != null) {
+            print('✅ Perfil cargado exitosamente en intento $attempts');
+            break;
+          } else {
+            print('❌ Intento $attempts falló - perfil no encontrado');
+            
+            // En el último intento, intentar verificar directamente en la DB
+            if (attempts == maxAttempts - 1) {
+              print('🔄 Último intento: verificando directamente en Supabase...');
+              try {
+                final directCheck = await Supabase.instance.client
+                    .from('users')
+                    .select()
+                    .eq('id', response.user!.id)
+                    .maybeSingle();
+                
+                if (directCheck != null) {
+                  print('✅ Usuario encontrado en verificación directa: $directCheck');
+                  _currentUser = UserProfile.fromJson(directCheck);
+                  break;
+                } else {
+                  print('❌ Usuario NO encontrado en verificación directa');
+                }
+              } catch (e) {
+                print('❌ Error en verificación directa: $e');
+              }
+            }
+          }
+        }
+        
+        // Verificar que el usuario se creó correctamente en la DB
+        if (_currentUser != null) {
+          // Log registro exitoso
+          await _analytics.logUserAction(
+            action: 'user_registered',
+            userId: response.user!.id,
+            details: {'role': role.name, 'city': city, 'country': country},
+          );
+          
+          // Notificación para admin
+          await _analytics.sendAdminNotification(
+            title: 'Nuevo usuario registrado',
+            message: 'Usuario $fullName se registró como ${role.name}',
+            type: 'success',
+          );
+          
+          return true;
+        } else {
+          print('❌ No se pudo cargar perfil después de $maxAttempts intentos');
+          _setError('Error: Usuario creado en Auth pero no en base de datos');
+          return false;
+        }
       }
       return false;
     } catch (e) {
@@ -144,14 +255,24 @@ class AuthProvider extends ChangeNotifier {
       if (response.user != null) {
         await _loadUserProfile();
         
-        // Log login exitoso
-        await _analytics.logUserAction(
-          action: 'user_login',
-          userId: response.user!.id,
-          details: {'email': email},
-        );
-        
-        return true;
+        // Verificar que el perfil se cargó correctamente
+        if (_currentUser != null) {
+          // Log login exitoso
+          await _analytics.logUserAction(
+            action: 'user_login',
+            userId: response.user!.id,
+            details: {'email': email, 'role': _currentUser!.role.name},
+          );
+          
+          return true;
+        } else {
+          _setError('Error: No se pudo cargar el perfil del usuario');
+          // Intentar signOut para limpiar estado inconsistente
+          try {
+            await _authService.signOut();
+          } catch (_) {}
+          return false;
+        }
       }
       return false;
     } catch (e) {
@@ -170,41 +291,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      final response = await _authService.signInWithGoogle();
-
-      if (response?.user != null) {
-        await _loadUserProfile();
-        
-        // Log login exitoso con Google
-        await _analytics.logUserAction(
-          action: 'user_login_google',
-          userId: response!.user!.id,
-          details: {'provider': 'google'},
-        );
-        
-        return true;
-      }
-      return false;
-    } catch (e) {
-      _setError('Error en inicio de sesión con Google: $e');
-      
-      // Log error de login con Google
-      await _analytics.logError(
-        error: e.toString(),
-        context: 'user_login_google',
-        details: {},
-      );
-      
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
 
   Future<void> signOut() async {
     _setLoading(true);

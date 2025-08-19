@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/services/analytics_service.dart';
 import '../../core/services/admin_service.dart';
@@ -53,6 +54,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         backgroundColor: Colors.deepOrange,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () => context.go('/home'),
+            tooltip: 'Volver al Inicio',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadStats,

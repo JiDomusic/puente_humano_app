@@ -11,27 +11,49 @@ class AdminService {
   
   // Verificar si un usuario es administrador
   Future<bool> isAdmin(String email) async {
+    final emailLower = email.toLowerCase();
+    print('🔍 AdminService.isAdmin() verificando: $emailLower');
+    
     try {
-      // Primero verificar en la base de datos
+      // Primero verificar en la lista hardcoded (más rápido y confiable)
+      if (_authorizedAdmins.contains(emailLower)) {
+        print('✅ Usuario encontrado en lista hardcoded de admins');
+        
+        // Intentar actualizar último login en la DB si existe
+        try {
+          await _updateLastLogin(email);
+        } catch (e) {
+          print('⚠️ No se pudo actualizar último login: $e');
+        }
+        
+        return true;
+      }
+      
+      // Verificar en la base de datos como backup
+      print('🔍 Verificando en base de datos admin_users...');
       final result = await _supabase
           .from('admin_users')
-          .select('id')
-          .eq('email', email.toLowerCase())
-          .eq('is_active', true)
+          .select('id, is_active')
+          .eq('email', emailLower)
           .maybeSingle();
       
-      if (result != null) {
-        // Actualizar último login
+      print('🔍 Resultado de DB admin_users: $result');
+      
+      if (result != null && result['is_active'] == true) {
+        print('✅ Usuario encontrado como admin en DB');
         await _updateLastLogin(email);
         return true;
       }
       
-      // Backup: verificar en lista hardcoded
-      return _authorizedAdmins.contains(email.toLowerCase());
+      print('❌ Usuario NO es admin - no encontrado en lista ni DB');
+      return false;
+      
     } catch (e) {
-      print('Error verificando admin: $e');
-      // En caso de error, usar lista hardcoded
-      return _authorizedAdmins.contains(email.toLowerCase());
+      print('❌ Error verificando admin en DB: $e');
+      // En caso de error de DB, usar lista hardcoded como fallback final
+      final isAdminFallback = _authorizedAdmins.contains(emailLower);
+      print('🔄 Fallback a lista hardcoded: $isAdminFallback');
+      return isAdminFallback;
     }
   }
   

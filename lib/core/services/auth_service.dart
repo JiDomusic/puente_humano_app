@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_profile.dart';
 import 'storage_service.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final StorageService _storageService = StorageService();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   
   // Inicializar storage al crear la instancia
   AuthService() {
@@ -15,7 +13,12 @@ class AuthService {
   }
   
   Future<void> _initializeStorage() async {
-    await _storageService.createAvatarsBucketIfNotExists();
+    try {
+      await _storageService.createAvatarsBucketIfNotExists();
+    } catch (e) {
+      print('Warning: Could not create avatars bucket: $e');
+      // No lanzar error, continuar sin storage de avatars
+    }
   }
 
   User? get currentUser => _supabase.auth.currentUser;
@@ -51,17 +54,23 @@ class AuthService {
     );
 
     if (response.user != null) {
-      // Crear perfil en la tabla users
-      await _createUserProfile(response.user!, {
-        'full_name': fullName,
-        'role': role.name,
-        'phone': phone,
-        'city': city,
-        'country': country,
-        'lat': lat,
-        'lng': lng,
-        'language': 'es',
-      });
+      try {
+        // Crear perfil en la tabla users
+        await _createUserProfile(response.user!, {
+          'full_name': fullName,
+          'role': role.name,
+          'phone': phone,
+          'city': city,
+          'country': country,
+          'lat': lat,
+          'lng': lng,
+          'language': 'es',
+        });
+        print('✅ Perfil creado exitosamente en AuthService');
+      } catch (e) {
+        print('❌ Error creando perfil en AuthService: $e');
+        // Importante: NO lanzar error aquí, ya que el usuario ya está en Auth
+      }
     }
 
     return response;
@@ -78,47 +87,9 @@ class AuthService {
     );
   }
 
-  // Inicio de sesión con Google
-  Future<AuthResponse?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      final AuthResponse response = await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: googleAuth.idToken!,
-        accessToken: googleAuth.accessToken,
-      );
-
-      if (response.user != null) {
-        // Verificar si el usuario ya existe en nuestra base de datos
-        final existingUser = await getUserProfile(response.user!.id);
-        
-        if (existingUser == null) {
-          // Crear perfil si no existe
-          await _createUserProfile(response.user!, {
-            'full_name': googleUser.displayName ?? 'Usuario Google',
-            'role': UserRole.donor.name,
-            'phone': '',
-            'city': '',
-            'country': '',
-            'language': 'es',
-            'photo': googleUser.photoUrl,
-          });
-        }
-      }
-
-      return response;
-    } catch (e) {
-      throw Exception('Error al iniciar sesión con Google: $e');
-    }
-  }
 
   // Cerrar sesión
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _supabase.auth.signOut();
   }
 
@@ -127,28 +98,105 @@ class AuthService {
     await _supabase.auth.resetPasswordForEmail(email);
   }
 
-  // Crear perfil de usuario
+  // Crear perfil de usuario con manejo mejorado de errores y triggers
   Future<void> _createUserProfile(User user, Map<String, dynamic> profileData) async {
-    await _supabase.from('users').insert({
-      'id': user.id,
-      'email': user.email,
-      'created_at': DateTime.now().toIso8601String(),
-      ...profileData,
-    });
+    print('🔄 Creando/actualizando perfil para usuario: ${user.email} con ID: ${user.id}');
+    
+    try {
+      // Esperar un poco para que el trigger de auth.users se ejecute
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Verificar si el usuario ya existe en la tabla (trigger automático)
+      final existingUser = await _supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      if (existingUser != null) {
+        print('✅ Usuario ya existe en tabla users (creado por trigger)');
+        
+        // Solo actualizar los campos que no están en el trigger
+        final updateData = <String, dynamic>{};
+        if (profileData['lat'] != null) updateData['lat'] = profileData['lat'];
+        if (profileData['lng'] != null) updateData['lng'] = profileData['lng'];
+        
+        if (updateData.isNotEmpty) {
+          await _supabase
+              .from('users')
+              .update(updateData)
+              .eq('id', user.id);
+          print('✅ Datos adicionales actualizados (lat/lng)');
+        }
+        return;
+      }
+      
+      // Si no existe, crear manualmente (fallback)
+      print('⚠️ Usuario no creado por trigger, creando manualmente...');
+      final dataToInsert = {
+        'id': user.id,
+        'email': user.email,
+        'created_at': DateTime.now().toIso8601String(),
+        ...profileData,
+      };
+      
+      final result = await _supabase
+          .from('users')
+          .upsert(dataToInsert, onConflict: 'id')
+          .select();
+      
+      print('✅ Perfil creado manualmente: $result');
+      
+    } catch (e) {
+      print('❌ Error en _createUserProfile: $e');
+      
+      // Intentar una vez más con datos mínimos
+      try {
+        print('🔄 Reintentando con datos mínimos...');
+        await _supabase
+            .from('users')
+            .upsert({
+              'id': user.id,
+              'email': user.email ?? '',
+              'full_name': profileData['full_name'] ?? '',
+              'role': profileData['role'] ?? 'donante',
+              'phone': profileData['phone'] ?? '',
+              'city': profileData['city'] ?? '',
+              'country': profileData['country'] ?? '',
+              'language': 'es',
+            }, onConflict: 'id');
+        
+        print('✅ Perfil creado con datos mínimos en segundo intento');
+      } catch (retryError) {
+        print('❌ Error en segundo intento: $retryError');
+        throw Exception('Error guardando perfil después de reintentos: $retryError');
+      }
+    }
   }
 
-  // Obtener perfil de usuario
+  // Obtener perfil de usuario con mejor manejo de errores
   Future<UserProfile?> getUserProfile([String? userId]) async {
     final id = userId ?? currentUser?.id;
     if (id == null) return null;
 
-    final response = await _supabase
-        .from('users')
-        .select()
-        .eq('id', id)
-        .single();
+    try {
+      final response = await _supabase
+          .from('users')
+          .select()
+          .eq('id', id)
+          .maybeSingle(); // Usa maybeSingle en lugar de single para evitar excepciones
 
-    return UserProfile.fromJson(response);
+      if (response == null) {
+        print('No se encontró perfil para usuario: $id');
+        return null;
+      }
+
+      return UserProfile.fromJson(response);
+    } catch (e) {
+      print('Error obteniendo perfil de usuario: $e');
+      // Si es un error de red, podríamos implementar retry aquí
+      rethrow;
+    }
   }
 
   // Actualizar perfil

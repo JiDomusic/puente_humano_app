@@ -5,12 +5,14 @@ class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final UserRole userRole;
+  final bool isAdmin;
 
   const BottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.userRole,
+    this.isAdmin = false,
   });
 
   @override
@@ -28,9 +30,11 @@ class BottomNavBar extends StatelessWidget {
   }
 
   List<BottomNavigationBarItem> _getBottomNavItems() {
+    List<BottomNavigationBarItem> baseItems;
+    
     switch (userRole) {
       case UserRole.donante:
-        return [
+        baseItems = [
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Inicio',
@@ -48,9 +52,10 @@ class BottomNavBar extends StatelessWidget {
             label: 'Perfil',
           ),
         ];
+        break;
         
       case UserRole.transportista:
-        return [
+        baseItems = [
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Inicio',
@@ -68,9 +73,10 @@ class BottomNavBar extends StatelessWidget {
             label: 'Perfil',
           ),
         ];
+        break;
         
       case UserRole.biblioteca:
-        return [
+        baseItems = [
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Inicio',
@@ -88,6 +94,19 @@ class BottomNavBar extends StatelessWidget {
             label: 'Perfil',
           ),
         ];
+        break;
     }
+    
+    // Agregar botón Admin si es administrador
+    if (isAdmin) {
+      baseItems.add(
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.admin_panel_settings),
+          label: 'Admin',
+        ),
+      );
+    }
+    
+    return baseItems;
   }
 }
