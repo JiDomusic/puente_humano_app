@@ -195,19 +195,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 16),
                 
-                // Botón para admins
+                // Botón para admins - MUY VISIBLE
                 Container(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: ElevatedButton.icon(
                     onPressed: () => context.go('/admin-login'),
-                    icon: Icon(Icons.admin_panel_settings, color: Colors.red[600]),
-                    label: Text(
-                      'Acceso de Administrador',
-                      style: TextStyle(color: Colors.red[600]),
+                    icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
+                    label: const Text(
+                      '👑 ACCESO DE ADMINISTRADOR',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: BorderSide(color: Colors.red[300]!),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 8,
+                      shadowColor: Colors.red[300],
                     ),
                   ),
                 ),
@@ -223,30 +230,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const Spacer(),
-                
-                // Datos de prueba
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Usuarios de prueba:',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text('Donante: donante1@mail.com / 123456'),
-                      const Text('Transportista: viajero1@mail.com / 123456'),
-                      const Text('Biblioteca: biblio1@mail.com / 123456'),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),

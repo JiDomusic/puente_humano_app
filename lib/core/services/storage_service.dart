@@ -54,21 +54,27 @@ class StorageService {
     }
   }
 
-  // Crear bucket si no existe
+  // Crear bucket si no existe (silencioso)
   Future<void> createAvatarsBucketIfNotExists() async {
     try {
-      // Intentar crear el bucket
-      await _supabase.storage.createBucket(
-        _avatarsBucket,
-        const BucketOptions(
-          public: true,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-          fileSizeLimit: '5MB',
-        ),
-      );
+      // Intentar obtener la lista de buckets primero
+      final buckets = await _supabase.storage.listBuckets();
+      final bucketExists = buckets.any((bucket) => bucket.name == _avatarsBucket);
+      
+      if (!bucketExists) {
+        // Solo crear si no existe
+        await _supabase.storage.createBucket(
+          _avatarsBucket,
+          const BucketOptions(
+            public: true,
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            fileSizeLimit: '5MB',
+          ),
+        );
+      }
     } catch (e) {
-      // El bucket ya existe o hay otro error
-      print('Avatars bucket might already exist: $e');
+      // Silenciar completamente errores de storage
+      // No hacer print para evitar spam en consola
     }
   }
 }

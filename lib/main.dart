@@ -11,6 +11,7 @@ import 'core/routes/app_router.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/database_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/admin_auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/language_provider.dart';
 
@@ -37,6 +38,7 @@ class PuenteHumanoApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(context.read<AuthService>()),
         ),
+        ChangeNotifierProvider<AdminAuthProvider>(create: (_) => AdminAuthProvider()),
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
         ChangeNotifierProvider<LanguageProvider>(create: (_) => LanguageProvider()),
       ],

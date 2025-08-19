@@ -1,13 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/admin_config.dart';
 
 class AdminService {
   final SupabaseClient _supabase = Supabase.instance.client;
   
-  // Lista de emails de administradores autorizados (hardcoded como backup)
-  static const List<String> _authorizedAdmins = [
-    'equiz.rec@gmail.com',
-    'bibliowalsh25@gmail.com',
-  ];
+  // Usar configuración centralizada de administradores
+  static List<String> get _authorizedAdmins => AdminConfig.authorizedAdminEmails;
   
   // Verificar si un usuario es administrador
   Future<bool> isAdmin(String email) async {

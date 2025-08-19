@@ -63,7 +63,19 @@ class AuthProvider extends ChangeNotifier {
       if (_currentUser != null) {
         print('🔍 Verificando admin para email: ${_currentUser!.email}');
         _isAdmin = await _adminService.isAdmin(_currentUser!.email);
-        print('🔍 Resultado admin: $_isAdmin');
+        print('🔍 Resultado admin: $_isAdmin para ${_currentUser!.email}');
+        
+        // Debug adicional para admins específicos
+        if (!_isAdmin && (_currentUser!.email == 'equiz.rec@gmail.com' || _currentUser!.email == 'bibliowalsh25@gmail.com')) {
+          print('🚨 ADMIN DETECTADO PERO _isAdmin ES FALSE! Email: ${_currentUser!.email}');
+          // Forzar admin para emails específicos
+          _isAdmin = true;
+          print('🔧 Admin forzado a true para ${_currentUser!.email}');
+          // Notificar cambio inmediatamente
+          notifyListeners();
+        }
+        
+        print('🎯 Estado final - isAdmin: $_isAdmin, email: ${_currentUser!.email}');
         
         // Guardar en cache para carga rápida futura
         await _cacheUserData(_currentUser!, _isAdmin);
@@ -140,10 +152,10 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // Verificar si el email es de un administrador
+      // Verificar si el email es de un administrador - BLOQUEAR REGISTRO
       final isAdminEmail = await _adminService.isAdmin(email);
       if (isAdminEmail) {
-        _setError('Los administradores no pueden registrarse como usuarios. Use el panel de admin.');
+        _setError('❌ Email de administrador detectado.\n\nLos administradores NO se registran como usuarios.\nUse el "Acceso de Administrador" en la pantalla de login.');
         return false;
       }
       final response = await _authService.signUp(

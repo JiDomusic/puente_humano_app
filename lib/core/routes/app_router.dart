@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/admin_auth_provider.dart';
 import '../../screens/welcome_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
@@ -148,27 +149,27 @@ class AppRouter {
         path: '/admin',
         name: 'admin',
         builder: (context, state) {
-          final authProvider = context.read<AuthProvider>();
+          final adminAuthProvider = context.read<AdminAuthProvider>();
           
-          // Verificar si el usuario es administrador autorizado
-          if (!authProvider.isAdmin) {
+          // Verificar si el administrador está logueado
+          if (!adminAuthProvider.isLoggedIn) {
             return Scaffold(
               appBar: AppBar(
                 title: const Text('Acceso Denegado'),
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              body: const Center(
+              body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.security,
                       size: 64,
                       color: Colors.red,
                     ),
-                    SizedBox(height: 16),
-                    Text(
+                    const SizedBox(height: 16),
+                    const Text(
                       'Acceso Restringido',
                       style: TextStyle(
                         fontSize: 24,
@@ -176,11 +177,20 @@ class AppRouter {
                         color: Colors.red,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Solo administradores autorizados pueden acceder a esta sección.',
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Debe iniciar sesión como administrador para acceder.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.go('/admin-login'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Ir al Login de Admin'),
                     ),
                   ],
                 ),

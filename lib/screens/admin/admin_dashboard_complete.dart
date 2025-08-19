@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/services/admin_service.dart';
-import 'users_management_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -67,51 +66,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWelcomeCard(),
-                  const SizedBox(height: 24),
+                  // Estadísticas generales
                   _buildStatsSection(),
                   const SizedBox(height: 24),
+                  
+                  // Lista de usuarios para revisar
                   _buildUsersSection(),
                   const SizedBox(height: 24),
+                  
+                  // Herramientas de moderación
                   _buildModerationTools(),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _buildWelcomeCard() {
-    return Card(
-      elevation: 4,
-      color: Colors.red[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.admin_panel_settings, color: Colors.red[600], size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '👑 Panel de Propietario',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red[700],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Control total sobre PuenteHumano • Moderar usuarios • Detectar fraudes',
-                    style: TextStyle(color: Colors.red[600]),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -125,10 +92,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: Colors.blue[600], size: 24),
+                Icon(Icons.analytics, color: Colors.red[600], size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Estadísticas del Sistema',
+                  'Resumen del Sistema',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -141,7 +108,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Expanded(
                   child: _buildStatCard(
                     'Total Usuarios',
-                    (_stats['total_users'] ?? _users.length).toString(),
+                    _stats['total_users']?.toString() ?? '0',
                     Icons.people,
                     Colors.blue,
                   ),
@@ -150,7 +117,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Expanded(
                   child: _buildStatCard(
                     'Nuevos (7 días)',
-                    _countRecentUsers().toString(),
+                    _stats['users_this_week']?.toString() ?? '0',
                     Icons.trending_up,
                     Colors.green,
                   ),
@@ -158,7 +125,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildRoleStats(),
+            if (_stats['users_by_role'] != null)
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildRoleChip('Donantes', _stats['users_by_role']['donante'] ?? 0, Colors.blue),
+                  _buildRoleChip('Transportistas', _stats['users_by_role']['transportista'] ?? 0, Colors.green),
+                  _buildRoleChip('Bibliotecas', _stats['users_by_role']['biblioteca'] ?? 0, Colors.orange),
+                ],
+              ),
           ],
         ),
       ),
@@ -198,23 +173,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildRoleStats() {
-    final roleCount = <String, int>{};
-    for (final user in _users) {
-      final role = user['role'] as String? ?? 'sin_rol';
-      roleCount[role] = (roleCount[role] ?? 0) + 1;
-    }
-
-    return Wrap(
-      spacing: 8,
-      children: [
-        _buildRoleChip('Donantes', roleCount['donante'] ?? 0, Colors.blue),
-        _buildRoleChip('Transportistas', roleCount['transportista'] ?? 0, Colors.green),
-        _buildRoleChip('Bibliotecas', roleCount['biblioteca'] ?? 0, Colors.orange),
-      ],
-    );
-  }
-
   Widget _buildRoleChip(String role, int count, Color color) {
     return Chip(
       avatar: CircleAvatar(
@@ -227,18 +185,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       label: Text(role),
       backgroundColor: color.withOpacity(0.1),
     );
-  }
-
-  int _countRecentUsers() {
-    final now = DateTime.now();
-    return _users.where((user) {
-      try {
-        final createdAt = DateTime.parse(user['created_at'] ?? '');
-        return now.difference(createdAt).inDays <= 7;
-      } catch (e) {
-        return false;
-      }
-    }).length;
   }
 
   Widget _buildUsersSection() {
@@ -380,7 +326,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Icon(Icons.visibility, size: 16, color: Colors.blue),
                   SizedBox(width: 8),
-                  Text('Ver detalles'),
+                  Text('Ver detalles completos'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Editar información'),
                 ],
               ),
             ),
@@ -388,9 +344,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'flag',
               child: Row(
                 children: [
-                  Icon(Icons.flag, size: 16, color: Colors.orange),
+                  Icon(Icons.flag, size: 16, color: Colors.red),
                   SizedBox(width: 8),
-                  Text('Marcar sospechoso'),
+                  Text('Marcar como sospechoso'),
                 ],
               ),
             ),
@@ -398,7 +354,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'block',
               child: Row(
                 children: [
-                  Icon(Icons.block, size: 16, color: Colors.red),
+                  Icon(Icons.block, size: 16, color: Colors.orange),
                   SizedBox(width: 8),
                   Text('Bloquear usuario'),
                 ],
@@ -410,7 +366,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Icon(Icons.delete_forever, size: 16, color: Colors.red),
                   SizedBox(width: 8),
-                  Text('Eliminar'),
+                  Text('Eliminar permanentemente'),
                 ],
               ),
             ),
@@ -431,10 +387,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.build, color: Colors.purple[600], size: 24),
+                Icon(Icons.admin_panel_settings, color: Colors.red[600], size: 24),
                 const SizedBox(width: 8),
                 Text(
-                  'Herramientas de Propietario',
+                  'Herramientas de Administración',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -447,31 +403,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               runSpacing: 12,
               children: [
                 _buildToolButton(
-                  'Gestión Usuarios',
-                  Icons.manage_accounts,
-                  Colors.indigo,
-                  () => _openUsersManagement(),
-                ),
-                _buildToolButton(
-                  'Chat & Mensajes',
-                  Icons.chat,
-                  Colors.teal,
-                  () => _openChatManagement(),
-                ),
-                _buildToolButton(
-                  'Interacciones',
-                  Icons.star_rate,
-                  Colors.amber,
-                  () => _openInteractionsManagement(),
-                ),
-                _buildToolButton(
                   'Exportar Datos',
                   Icons.download,
                   Colors.blue,
                   () => _exportData(),
                 ),
                 _buildToolButton(
-                  'Limpiar Sistema',
+                  'Usuarios Sospechosos',
+                  Icons.warning,
+                  Colors.orange,
+                  () => _showSuspiciousUsers(),
+                ),
+                _buildToolButton(
+                  'Limpiar Datos',
                   Icons.cleaning_services,
                   Colors.purple,
                   () => _cleanupData(),
@@ -492,18 +436,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildToolButton(String title, IconData icon, Color color, VoidCallback onTap) {
     return SizedBox(
-      width: 150,
+      width: 160,
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 18),
         label: Text(
           title,
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 13),
+          overflow: TextOverflow.ellipsis,
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         ),
       ),
     );
@@ -563,6 +508,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       case 'view':
         _showUserDetails(user);
         break;
+      case 'edit':
+        _editUser(user);
+        break;
       case 'flag':
         _flagUser(user);
         break;
@@ -585,12 +533,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _detailRow('ID', user['id']),
+              _detailRow('ID del Sistema', user['id']),
               _detailRow('Email', user['email']),
               _detailRow('Rol', _getRoleDisplayName(user['role'])),
               _detailRow('Teléfono', user['phone'] ?? 'No especificado'),
               _detailRow('Ciudad', user['city'] ?? 'No especificada'),
               _detailRow('País', user['country'] ?? 'No especificado'),
+              _detailRow('Idioma', user['language'] ?? 'No especificado'),
+              _detailRow('Calificación', '${user['average_rating'] ?? 0} ⭐'),
               _detailRow('Registrado', _formatDate(user['created_at'])),
             ],
           ),
@@ -599,6 +549,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cerrar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _editUser(user);
+            },
+            child: const Text('Editar'),
           ),
         ],
       ),
@@ -612,7 +569,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 100,
             child: Text(
               '$label:',
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -626,9 +583,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  void _editUser(Map<String, dynamic> user) {
+    _showComingSoon('Editar usuario ${user['full_name']}');
+  }
+
   void _flagUser(Map<String, dynamic> user) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Usuario ${user['full_name']} marcado como sospechoso')),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🚩 Marcar como Sospechoso'),
+        content: Text('¿Marcar usuario ${user['full_name']} como sospechoso?\n\nEsto agregará una marca para revisión manual.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Usuario ${user['full_name']} marcado para revisión')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Marcar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -637,7 +618,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('🚫 Bloquear Usuario'),
-        content: Text('¿Bloquear usuario ${user['full_name']}?'),
+        content: Text('¿Bloquear usuario ${user['full_name']}?\n\nNo podrá acceder al sistema hasta ser desbloqueado.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -654,7 +635,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
+                  SnackBar(content: Text('Error bloqueando usuario: $e')),
                 );
               }
             },
@@ -670,10 +651,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('⚠️ ELIMINAR USUARIO'),
+        title: const Text('🗑️ ELIMINAR USUARIO'),
         content: Text(
-          'ELIMINAR PERMANENTEMENTE usuario ${user['full_name']}?\n\n'
-          'Esta acción NO se puede deshacer.',
+          '⚠️ ¿ELIMINAR PERMANENTEMENTE usuario ${user['full_name']}?\n\n'
+          '• Se eliminarán todos sus datos\n'
+          '• Se eliminarán sus donaciones/viajes\n'
+          '• Esta acción NO se puede deshacer\n\n'
+          'Solo eliminar si es spam/abuso confirmado.',
         ),
         actions: [
           TextButton(
@@ -687,57 +671,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 await _adminService.deleteUser(user['id']);
                 _loadAdminData();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Usuario ${user['full_name']} eliminado')),
+                  SnackBar(content: Text('Usuario ${user['full_name']} eliminado permanentemente')),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
+                  SnackBar(content: Text('Error eliminando usuario: $e')),
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('ELIMINAR'),
+            child: const Text('ELIMINAR DEFINITIVAMENTE'),
           ),
         ],
       ),
     );
   }
 
-  void _openUsersManagement() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const UsersManagementScreen(),
-      ),
-    );
-  }
-
-  void _openChatManagement() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('📱 Gestión de Chat: En desarrollo')),
-    );
-  }
-
-  void _openInteractionsManagement() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('⭐ Gestión de Interacciones: En desarrollo')),
-    );
-  }
-
   void _exportData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Exportar datos: Próximamente')),
-    );
+    _showComingSoon('Exportar datos del sistema');
+  }
+
+  void _showSuspiciousUsers() {
+    _showComingSoon('Ver usuarios marcados como sospechosos');
   }
 
   void _cleanupData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Limpiar sistema: Próximamente')),
-    );
+    _showComingSoon('Herramientas de limpieza de datos');
   }
 
   void _showSettings() {
+    _showComingSoon('Configuración del sistema');
+  }
+
+  void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Configuración: Próximamente')),
+      SnackBar(
+        content: Text('$feature: Próximamente disponible'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
     );
   }
 }

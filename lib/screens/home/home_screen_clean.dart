@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/models/user_profile.dart';
 import '../dashboards/donor_dashboard_screen.dart';
 import '../dashboards/transporter_dashboard_screen.dart';
 import '../dashboards/library_dashboard_screen.dart';
-
-/// 📚 PuenteHumano Home Screen
-/// "Un puente humano para que los libros lleguen a donde más se necesitan"
-/// 
-/// Conecta donantes de libros con bibliotecas comunitarias, 
-/// usando personas viajeras como canal humano para transportar los libros.
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,29 +29,27 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        // 🎯 NAVEGACIÓN AUTOMÁTICA POR ROL
-        // Cada usuario va directo a su dashboard personalizado
+        // REDIRIGIR AUTOMÁTICAMENTE SEGÚN EL ROL DEL USUARIO
         switch (user.role) {
           case UserRole.donante:
             return const DonorDashboardScreen();
-            
           case UserRole.transportista:
             return const TransporterDashboardScreen();
-            
           case UserRole.biblioteca:
             return const LibraryDashboardScreen();
-            
           default:
+            // Fallback para roles no reconocidos
             return _buildGenericHome(user);
         }
       },
     );
   }
 
+  // Dashboard genérico de fallback
   Widget _buildGenericHome(UserProfile user) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PuenteHumano'),
+        title: Text('Bienvenido ${user.fullName}'),
         backgroundColor: Colors.grey[600],
         foregroundColor: Colors.white,
       ),
@@ -64,13 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.warning, size: 64, color: Colors.orange[600]),
+            Icon(Icons.person, size: 64, color: Colors.grey[600]),
             const SizedBox(height: 16),
             Text(
-              'Rol no configurado',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              'Rol no reconocido: ${user.role}',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
