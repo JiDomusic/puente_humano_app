@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'dart:math';
 import '../models/user_profile.dart';
-import '../config/admin_config.dart';
 import 'storage_service.dart';
 
 class AuthService {
@@ -29,8 +31,8 @@ class AuthService {
   // Auth state stream
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
-  // Registro con email/password - SOLO USUARIOS REGULARES
-  Future<AuthResponse> signUp({
+  // Registro usando Supabase Auth + tabla users con referencia
+  Future<Map<String, dynamic>> signUp({
     required String email,
     required String password,
     required String fullName,
@@ -42,20 +44,26 @@ class AuthService {
     double? lat,
     double? lng,
   }) async {
-    // BLOQUEAR REGISTRO DE ADMINS
-    if (!AdminConfig.canRegisterAsUser(email)) {
-      throw Exception(AdminConfig.adminBlockMessage);
-    }
+    try {
+      print('🔄 Iniciando registro con Supabase Auth...');
+      
+      // 1. Crear usuario en Supabase Auth
+      final authResponse = await _supabase.auth.signUp(
+        email: email.toLowerCase(),
+        password: password,
+      );
 
-    // VALIDAR QUE EL ROL NO SEA ADMIN
-    if (role.name == 'admin') {
-      throw Exception('❌ El rol "admin" no está permitido para usuarios regulares.');
-    }
+      if (authResponse.user == null) {
+        throw Exception('Error creando usuario en Auth');
+      }
 
-    final response = await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: {
+      final authUser = authResponse.user!;
+      print('✅ Usuario creado en Auth: ${authUser.id}');
+
+      // 2. Crear perfil en tabla users (referencia a auth.users)
+      await _supabase.from('users').insert({
+        'id': authUser.id, // Usar el ID de auth.users
+        'email': email.toLowerCase(),
         'full_name': fullName,
         'role': role.name,
         'phone': phone,
@@ -65,32 +73,76 @@ class AuthService {
         'lat': lat,
         'lng': lng,
         'language': 'es',
-      },
-    );
+        'created_at': DateTime.now().toIso8601String(),
+      });
 
-    // El trigger automático se encarga de crear el perfil en la tabla users
-    if (response.user != null) {
-      print('✅ Usuario registrado exitosamente: ${response.user!.email}');
-      print('🔄 El trigger automático creará el perfil en la tabla users');
+      print('✅ Perfil creado en tabla users: $email');
+
+      return {
+        'success': true,
+        'user': {
+          'id': authUser.id,
+          'email': email,
+          'full_name': fullName,
+          'role': role.name,
+        }
+      };
+    } catch (e) {
+      print('❌ Error en registro: $e');
+      
+      // Si falló la creación del perfil pero el usuario auth existe, limpiarlo
+      if (currentUser != null) {
+        try {
+          await _supabase.auth.signOut();
+        } catch (_) {}
+      }
+      
+      throw Exception('Error al crear la cuenta: $e');
     }
-
-    return response;
   }
 
-  // Inicio de sesión - SOLO USUARIOS REGULARES
-  Future<AuthResponse> signIn({
+  // Inicio de sesión usando Supabase Auth
+  Future<Map<String, dynamic>> signIn({
     required String email,
     required String password,
   }) async {
-    // BLOQUEAR LOGIN DE ADMINS COMO USUARIOS REGULARES
-    if (AdminConfig.isAuthorizedAdmin(email)) {
-      throw Exception(AdminConfig.adminLoginBlockMessage);
-    }
+    try {
+      print('🔄 Iniciando sesión con Supabase Auth...');
+      
+      // 1. Autenticar con Supabase Auth
+      final authResponse = await _supabase.auth.signInWithPassword(
+        email: email.toLowerCase(),
+        password: password,
+      );
 
-    return await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+      if (authResponse.user == null) {
+        throw Exception('Email o contraseña incorrectos');
+      }
+
+      final authUser = authResponse.user!;
+      print('✅ Usuario autenticado: ${authUser.id}');
+
+      // 2. Obtener perfil de tabla users
+      final userProfile = await _supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .maybeSingle();
+
+      if (userProfile == null) {
+        throw Exception('Perfil de usuario no encontrado');
+      }
+
+      print('✅ Perfil cargado: ${userProfile['full_name']}');
+
+      return {
+        'success': true,
+        'user': userProfile,
+      };
+    } catch (e) {
+      print('❌ Error en login: $e');
+      throw Exception('Error al iniciar sesión: $e');
+    }
   }
 
 
@@ -198,4 +250,5 @@ class AuthService {
       return false;
     }
   }
+
 }

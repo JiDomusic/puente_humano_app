@@ -172,8 +172,8 @@ class AuthProvider extends ChangeNotifier {
         lng: lng,
       );
 
-      if (response.user != null) {
-        print('🔄 Usuario creado en Auth, cargando perfil...');
+      if (response['success'] == true) {
+        print('🔄 Usuario creado directamente en tabla users...');
         
         // Esperar un poco para que el trigger/upsert se complete
         await Future.delayed(const Duration(milliseconds: 1000));
@@ -202,7 +202,7 @@ class AuthProvider extends ChangeNotifier {
                 final directCheck = await Supabase.instance.client
                     .from('users')
                     .select()
-                    .eq('id', response.user!.id)
+                    .eq('id', response['user']['id'])
                     .maybeSingle();
                 
                 if (directCheck != null) {
@@ -224,7 +224,7 @@ class AuthProvider extends ChangeNotifier {
           // Log registro exitoso
           await _analytics.logUserAction(
             action: 'user_registered',
-            userId: response.user!.id,
+            userId: response['user']['id'],
             details: {'role': role.name, 'city': city, 'country': country},
           );
           
@@ -279,7 +279,7 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      if (response.user != null) {
+      if (response['success'] == true) {
         await _loadUserProfile();
         
         // Verificar que el perfil se cargó correctamente
@@ -287,7 +287,7 @@ class AuthProvider extends ChangeNotifier {
           // Log login exitoso
           await _analytics.logUserAction(
             action: 'user_login',
-            userId: response.user!.id,
+            userId: response['user']['id'],
             details: {'email': email, 'role': _currentUser!.role.name},
           );
           

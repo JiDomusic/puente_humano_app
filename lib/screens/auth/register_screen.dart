@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -55,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<SimpleAuthProvider>();
     
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
@@ -69,20 +69,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (success && mounted) {
-      // Mostrar mensaje de éxito
+      // Obtener el usuario recién creado
+      final newUser = authProvider.currentUser;
+      
+      // Mostrar mensaje de éxito personalizado por rol
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Cuenta creada exitosamente! Bienvenido a PuenteHumano'),
+        SnackBar(
+          content: Text('¡Cuenta creada exitosamente! Bienvenido ${newUser?.fullName} (${newUser?.role.displayName})'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
       
       // Esperar un momento para que se vea el mensaje
       await Future.delayed(const Duration(milliseconds: 1500));
       
-      // Navegar a home
-      context.go('/home');
+      // Navegar al perfil público del usuario recién creado
+      if (newUser != null) {
+        context.go('/user/${newUser.id}');
+      } else {
+        context.go('/home');
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -121,87 +128,91 @@ class _RegisterScreenState extends State<RegisterScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Indicador de progreso
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: List.generate(3, (index) {
-                    return Expanded(
-                      child: Container(
-                        height: 4,
-                        margin: EdgeInsets.only(
-                          right: index < 2 ? 8 : 0,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                // Indicador de progreso
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: List.generate(3, (index) {
+                      return Expanded(
+                        child: Container(
+                          height: 4,
+                          margin: EdgeInsets.only(
+                            right: index < 2 ? 8 : 0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: index <= _currentPage
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: index <= _currentPage
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
+                      );
+                    }),
+                  ),
+                ),
+                
+                // Contenido de las páginas
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (page) {
+                      setState(() {
+                        _currentPage = page;
+                      });
+                    },
+                    children: [
+                      _buildRolePage(),
+                      _buildAccountPage(),
+                      _buildPersonalPage(),
+                    ],
+                  ),
+                ),
+                
+                // Botones de navegación
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: [
+                      if (_currentPage > 0)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _previousPage,
+                            child: const Text('Anterior'),
+                          ),
                         ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-              
-              // Contenido de las páginas
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (page) {
-                    setState(() {
-                      _currentPage = page;
-                    });
-                  },
-                  children: [
-                    _buildRolePage(),
-                    _buildAccountPage(),
-                    _buildPersonalPage(),
-                  ],
-                ),
-              ),
-              
-              // Botones de navegación
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    if (_currentPage > 0)
+                      
+                      if (_currentPage > 0) const SizedBox(width: 16),
+                      
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: _previousPage,
-                          child: const Text('Anterior'),
+                        child: Consumer<SimpleAuthProvider>(
+                          builder: (context, authProvider, child) {
+                            return ElevatedButton(
+                              onPressed: authProvider.isLoading 
+                                  ? null 
+                                  : (_currentPage == 2 ? _handleRegister : _nextPage),
+                              child: authProvider.isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : Text(_currentPage == 2 ? 'Registrarse' : 'Siguiente'),
+                            );
+                          },
                         ),
                       ),
-                    
-                    if (_currentPage > 0) const SizedBox(width: 16),
-                    
-                    Expanded(
-                      child: Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          return ElevatedButton(
-                            onPressed: authProvider.isLoading 
-                                ? null 
-                                : (_currentPage == 2 ? _handleRegister : _nextPage),
-                            child: authProvider.isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Text(_currentPage == 2 ? 'Registrarse' : 'Siguiente'),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -209,7 +220,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildRolePage() {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -260,6 +272,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'Biblioteca',
             'Recibe libros para tu comunidad o institución',
           ),
+          
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -345,7 +359,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildAccountPage() {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -449,13 +464,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
+          
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
   Widget _buildPersonalPage() {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -573,7 +591,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
           
-          const Spacer(),
+          const SizedBox(height: 48),
           
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 import '../../providers/admin_auth_provider.dart';
 import '../../screens/welcome_screen.dart';
 import '../../screens/auth/login_screen.dart';
@@ -23,12 +23,13 @@ import '../../screens/libraries/library_detail_screen.dart';
 import '../../screens/maps/map_screen.dart';
 import '../../screens/admin/admin_dashboard_screen.dart';
 import '../../screens/profile/public_profile_screen.dart';
+import '../../screens/test_registration_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final authProvider = context.read<AuthProvider>();
+      final authProvider = context.read<SimpleAuthProvider>();
       final adminAuthProvider = context.read<AdminAuthProvider>();
       final isLoggedIn = authProvider.isLoggedIn;
       final isLoading = authProvider.isLoading;
@@ -39,7 +40,7 @@ class AppRouter {
       if (isLoading) return null;
 
       // Rutas públicas (no requieren autenticación)
-      final publicRoutes = ['/', '/login', '/register', '/admin-login'];
+      final publicRoutes = ['/', '/login', '/register', '/admin-login', '/test'];
       final isPublicRoute = publicRoutes.contains(state.fullPath);
 
       // Si no está logueado y trata de acceder a ruta privada
@@ -89,6 +90,13 @@ class AppRouter {
         path: '/admin-login',
         name: 'admin-login',
         builder: (context, state) => const AdminLoginScreen(),
+      ),
+
+      // Pantalla de test (temporal para debugging)
+      GoRoute(
+        path: '/test',
+        name: 'test',
+        builder: (context, state) => const TestRegistrationScreen(),
       ),
 
       // Ruta principal (home)

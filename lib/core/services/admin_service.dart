@@ -1,178 +1,132 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import '../config/admin_config.dart';
 
 class AdminService {
   final SupabaseClient _supabase = Supabase.instance.client;
   
-  // Usar configuración centralizada de administradores
-  static List<String> get _authorizedAdmins => AdminConfig.authorizedAdminEmails;
-  
   // Verificar si un usuario es administrador
   Future<bool> isAdmin(String email) async {
-    final emailLower = email.toLowerCase();
-    if (kDebugMode) {
-      debugPrint('🔍 AdminService.isAdmin() verificando: $emailLower');
-    }
-    
     try {
-      // Primero verificar en la lista hardcoded (más rápido y confiable)
-      if (_authorizedAdmins.contains(emailLower)) {
-        if (kDebugMode) {
-          debugPrint('✅ Usuario encontrado en lista hardcoded de admins');
-        }
-        
-        // Intentar actualizar último login en la DB si existe
-        try {
-          await _updateLastLogin(email);
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('⚠️ No se pudo actualizar último login: $e');
-          }
-        }
-        
-        return true;
-      }
-      
-      // Verificar en la base de datos como backup
-      if (kDebugMode) {
-        debugPrint('🔍 Verificando en base de datos admin_users...');
-      }
-      final result = await _supabase
-          .from('admin_users')
-          .select('id, is_active')
-          .eq('email', emailLower)
+      final user = await _supabase
+          .from('users')
+          .select('role')
+          .eq('email', email.toLowerCase())
           .maybeSingle();
       
+      return user != null && user['role'] == 'admin';
+    } catch (e) {
       if (kDebugMode) {
-        debugPrint('🔍 Resultado de DB admin_users: $result');
+        debugPrint('Error verificando admin: $e');
       }
+      return false;
+    }
+  }
+
+  // Autenticar administrador
+  Future<bool> authenticateAdmin(String email, String password) async {
+    try {
+      final user = await _supabase
+          .from('users')
+          .select('*')
+          .eq('email', email.toLowerCase())
+          .eq('role', 'admin')
+          .maybeSingle();
       
-      if (result != null && result['is_active'] == true) {
+      if (user != null) {
+        // En un sistema real, verificarías la contraseña hash
+        // Por ahora, simplificado para testing
         if (kDebugMode) {
-          debugPrint('✅ Usuario encontrado como admin en DB');
+          debugPrint('Admin encontrado: ${user['email']}');
         }
-        await _updateLastLogin(email);
         return true;
       }
       
+      return false;
+    } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Usuario NO es admin - no encontrado en lista ni DB');
+        debugPrint('Error autenticando admin: $e');
       }
       return false;
-      
-    } catch (e) {
-      print('❌ Error verificando admin en DB: $e');
-      // En caso de error de DB, usar lista hardcoded como fallback final
-      final isAdminFallback = _authorizedAdmins.contains(emailLower);
-      print('🔄 Fallback a lista hardcoded: $isAdminFallback');
-      return isAdminFallback;
     }
   }
-  
-  // Actualizar último login del admin
-  Future<void> _updateLastLogin(String email) async {
+
+  // Obtener información del admin
+  Future<Map<String, dynamic>?> getAdminInfo(String email) async {
     try {
-      await _supabase
-          .from('admin_users')
-          .update({'last_login': DateTime.now().toIso8601String()})
-          .eq('email', email.toLowerCase());
+      final user = await _supabase
+          .from('users')
+          .select('*')
+          .eq('email', email.toLowerCase())
+          .eq('role', 'admin')
+          .maybeSingle();
+      
+      return user;
     } catch (e) {
-      print('Error actualizando último login: $e');
+      if (kDebugMode) {
+        debugPrint('Error obteniendo info admin: $e');
+      }
+      return null;
     }
   }
-  
-  // Obtener estadísticas completas para administradores
+
+  // Obtener estadísticas del admin
   Future<Map<String, dynamic>> getAdminStats() async {
     try {
-      // Usuarios totales
       final totalUsers = await _supabase
           .from('users')
           .select('id')
           .count();
       
-      // Usuarios por día (últimos 7 días)
-      final usersThisWeek = await _supabase
+      final donantes = await _supabase
           .from('users')
-          .select('created_at')
-          .gte('created_at', DateTime.now().subtract(const Duration(days: 7)).toIso8601String());
+          .select('id')
+          .eq('role', 'donante')
+          .count();
       
-      // Usuarios por rol
-      final usersByRole = await _supabase
+      final transportistas = await _supabase
           .from('users')
-          .select('role');
+          .select('id')
+          .eq('role', 'transportista')
+          .count();
       
-      // Actividad reciente (si existe la tabla)
-      List<Map<String, dynamic>> recentActivity = [];
-      try {
-        recentActivity = await _supabase
-            .from('user_logs')
-            .select('action, timestamp, user_id, details')
-            .order('timestamp', ascending: false)
-            .limit(50);
-      } catch (e) {
-        print('Tabla user_logs no existe aún: $e');
-      }
-      
-      // Errores recientes
-      List<Map<String, dynamic>> recentErrors = [];
-      try {
-        recentErrors = await _supabase
-            .from('error_logs')
-            .select('error, context, timestamp, resolved')
-            .eq('resolved', false)
-            .order('timestamp', ascending: false)
-            .limit(20);
-      } catch (e) {
-        print('Tabla error_logs no existe aún: $e');
-      }
-      
+      final bibliotecas = await _supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'biblioteca')
+          .count();
+
       return {
         'total_users': totalUsers,
-        'users_this_week': usersThisWeek.length,
-        'users_by_role': _groupByRole(usersByRole),
-        'recent_activity': recentActivity,
-        'recent_errors': recentErrors,
-        'last_updated': DateTime.now().toIso8601String(),
+        'donantes': donantes,
+        'transportistas': transportistas,
+        'bibliotecas': bibliotecas,
       };
     } catch (e) {
-      print('Error obteniendo estadísticas de admin: $e');
+      if (kDebugMode) {
+        debugPrint('Error obteniendo estadísticas: $e');
+      }
       return {};
     }
   }
-  
-  Map<String, int> _groupByRole(List<Map<String, dynamic>> users) {
-    final Map<String, int> roleCount = {
-      'donante': 0,
-      'transportista': 0,
-      'biblioteca': 0,
-    };
-    
-    for (final user in users) {
-      final role = user['role'] as String?;
-      if (role != null && roleCount.containsKey(role)) {
-        roleCount[role] = roleCount[role]! + 1;
-      }
-    }
-    
-    return roleCount;
-  }
-  
-  // Eliminar usuario (solo para administradores)
-  Future<bool> deleteUser(String userId) async {
+
+  // Obtener todos los usuarios
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
     try {
-      // Eliminar de auth de Supabase
-      await _supabase.auth.admin.deleteUser(userId);
+      final users = await _supabase
+          .from('users')
+          .select('*')
+          .order('created_at', ascending: false);
       
-      // La eliminación en cascade debería eliminar de la tabla users también
-      return true;
+      return List<Map<String, dynamic>>.from(users);
     } catch (e) {
-      print('Error eliminando usuario: $e');
-      return false;
+      if (kDebugMode) {
+        debugPrint('Error obteniendo usuarios: $e');
+      }
+      return [];
     }
   }
-  
-  // Desactivar usuario temporalmente
+
+  // Desactivar usuario
   Future<bool> deactivateUser(String userId) async {
     try {
       await _supabase
@@ -182,21 +136,27 @@ class AdminService {
       
       return true;
     } catch (e) {
-      print('Error desactivando usuario: $e');
+      if (kDebugMode) {
+        debugPrint('Error desactivando usuario: $e');
+      }
       return false;
     }
   }
-  
-  // Obtener lista de usuarios para administración
-  Future<List<Map<String, dynamic>>> getAllUsers() async {
+
+  // Eliminar usuario
+  Future<bool> deleteUser(String userId) async {
     try {
-      return await _supabase
+      await _supabase
           .from('users')
-          .select('id, email, full_name, role, city, country, created_at, average_rating')
-          .order('created_at', ascending: false);
+          .delete()
+          .eq('id', userId);
+      
+      return true;
     } catch (e) {
-      print('Error obteniendo usuarios: $e');
-      return [];
+      if (kDebugMode) {
+        debugPrint('Error eliminando usuario: $e');
+      }
+      return false;
     }
   }
 }

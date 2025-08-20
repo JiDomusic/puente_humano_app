@@ -10,7 +10,7 @@ import 'core/theme/app_theme.dart';
 import 'core/routes/app_router.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/database_service.dart';
-import 'providers/auth_provider.dart';
+import 'providers/auth_provider_simple.dart';
 import 'providers/admin_auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/language_provider.dart';
@@ -35,8 +35,8 @@ class PuenteHumanoApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<DatabaseService>(create: (_) => DatabaseService()),
-        ChangeNotifierProvider<AuthProvider>(
-          create: (context) => AuthProvider(context.read<AuthService>()),
+        ChangeNotifierProvider<SimpleAuthProvider>(
+          create: (context) => SimpleAuthProvider(),
         ),
         ChangeNotifierProvider<AdminAuthProvider>(create: (_) => AdminAuthProvider()),
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
