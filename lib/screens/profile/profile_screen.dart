@@ -35,20 +35,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final authProvider = context.read<SimpleAuthProvider>();
         final user = authProvider.currentUser;
         
-        if (user != null) {
-          final photoUrl = await _storageService.uploadProfilePhoto(
-            user.id, 
-            File(image.path)
+        // Usar el mismo método que ProfileEditScreen
+        final success = await authProvider.updateProfilePhoto(File(image.path));
+        
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Foto de perfil actualizada'),
+              backgroundColor: Colors.green,
+            ),
           );
-          
-          if (photoUrl != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Foto de perfil actualizada'),
-                backgroundColor: Colors.green,
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                authProvider.error ?? 'Error al subir la foto'
               ),
-            );
-          }
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {

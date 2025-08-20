@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider_simple.dart';
+import '../../core/models/user_profile.dart';
+import '../../core/services/user_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/star_rating.dart';
 
 class DonorDashboardScreen extends StatefulWidget {
   const DonorDashboardScreen({super.key});
@@ -11,25 +15,67 @@ class DonorDashboardScreen extends StatefulWidget {
 }
 
 class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
+  final UserService _userService = UserService();
+  List<UserProfile> _donantes = [];
+  List<UserProfile> _bibliotecas = [];
+  List<UserProfile> _transportistas = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final futures = await Future.wait([
+        _userService.getUsersByRole(UserRole.donante),
+        _userService.getUsersByRole(UserRole.biblioteca),
+        _userService.getUsersByRole(UserRole.transportista),
+      ]);
+      
+      setState(() {
+        _donantes = futures[0];
+        _bibliotecas = futures[1];
+        _transportistas = futures[2];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SimpleAuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
+        final l10n = AppLocalizations.of(context);
+        final isMobile = MediaQuery.of(context).size.width < 600;
         
         return Scaffold(
           appBar: AppBar(
-            title: Text('¡Hola ${user?.fullName ?? 'Donante'}!'),
+            title: Text('¡Hola ${user?.fullName ?? l10n.donor}!'),
             backgroundColor: Colors.blue[600],
             foregroundColor: Colors.white,
             actions: [
               IconButton(
+                icon: const Icon(Icons.home),
+                onPressed: () => context.go('/home'),
+                tooltip: l10n.backToHome,
+              ),
+              IconButton(
                 icon: const Icon(Icons.notifications),
                 onPressed: () => context.push('/notifications'),
+                tooltip: l10n.notifications,
               ),
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () => _showLogoutDialog(context),
+                tooltip: l10n.logout,
               ),
             ],
           ),
@@ -47,19 +93,23 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
                   SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                   
                   // Acciones rápidas para donantes
-                  _buildQuickActions(),
-                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  _buildQuickActions(l10n, isMobile),
+                  SizedBox(height: isMobile ? 16 : 24),
+                  
+                  // Todos los usuarios y sus rutas
+                  _buildAllUsersSection(l10n, isMobile),
+                  SizedBox(height: isMobile ? 16 : 24),
                   
                   // Mis donaciones
-                  _buildMyDonations(),
-                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  _buildMyDonations(l10n, isMobile),
+                  SizedBox(height: isMobile ? 16 : 24),
                   
                   // Bibliotecas cercanas
-                  _buildNearbyLibraries(),
-                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  _buildNearbyLibraries(l10n, isMobile),
+                  SizedBox(height: isMobile ? 16 : 24),
                   
                   // Estadísticas personales
-                  _buildPersonalStats(),
+                  _buildPersonalStats(l10n, isMobile),
                   
                   // Espaciado final para navegación
                   const SizedBox(height: 100),
@@ -109,12 +159,12 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Acciones Rápidas',
+          l10n.quickActions,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -130,7 +180,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
                     children: [
                       Expanded(
                         child: _buildActionCard(
-                          'Donar Libros',
+                          l10n.donateBooks,
                           Icons.add_circle,
                           Colors.green,
                           () => context.push('/donations/create'),
@@ -139,10 +189,10 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionCard(
-                          'Buscar Bibliotecas',
-                          Icons.search,
-                          Colors.orange,
-                          () => context.push('/libraries'),
+                          l10n.viewLibraries,
+                          Icons.library_books,
+                          Colors.purple,
+                          () => context.push('/users?role=biblioteca'),
                         ),
                       ),
                     ],
@@ -152,19 +202,19 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
                     children: [
                       Expanded(
                         child: _buildActionCard(
-                          'Ver Transportistas',
+                          l10n.viewTransporters,
                           Icons.local_shipping,
-                          Colors.purple,
-                          () => context.push('/trips'),
+                          Colors.green,
+                          () => context.push('/users?role=transportista'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionCard(
-                          'Mi Perfil',
-                          Icons.person,
-                          Colors.blue,
-                          () => context.push('/profile'),
+                          l10n.users,
+                          Icons.people,
+                          Colors.teal,
+                          () => context.push('/users'),
                         ),
                       ),
                     ],
@@ -258,7 +308,173 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     );
   }
 
-  Widget _buildMyDonations() {
+  Widget _buildAllUsersSection(AppLocalizations l10n, bool isMobile) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🌍 Red de Usuarios y Rutas',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Bibliotecas
+        _buildUserRoleCard(
+          title: '📖 ${l10n.viewLibraries} (${_bibliotecas.length})',
+          users: _bibliotecas.take(3).toList(),
+          color: Colors.purple[600]!,
+          onViewAll: () => context.push('/users?role=biblioteca'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+        const SizedBox(height: 12),
+        
+        // Transportistas
+        _buildUserRoleCard(
+          title: '🚛 ${l10n.viewTransporters} (${_transportistas.length})',
+          users: _transportistas.take(3).toList(),
+          color: Colors.green[600]!,
+          onViewAll: () => context.push('/users?role=transportista'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+        const SizedBox(height: 12),
+        
+        // Otros Donantes
+        _buildUserRoleCard(
+          title: '📚 Otros ${l10n.viewDonors} (${_donantes.length})',
+          users: _donantes.take(3).toList(),
+          color: Colors.blue[600]!,
+          onViewAll: () => context.push('/users?role=donante'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserRoleCard({
+    required String title,
+    required List<UserProfile> users,
+    required Color color,
+    required VoidCallback onViewAll,
+    required AppLocalizations l10n,
+    required bool isMobile,
+  }) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 14 : 16,
+                      color: color,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onViewAll,
+                  child: Text(
+                    'Ver todos',
+                    style: TextStyle(fontSize: isMobile ? 12 : 14),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 8 : 12),
+            if (users.isEmpty)
+              Text(
+                'No hay usuarios registrados en este rol',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: isMobile ? 12 : 14,
+                ),
+              )
+            else
+              ...users.map((user) => _buildUserRouteItem(user, color, isMobile)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserRouteItem(UserProfile user, Color color, bool isMobile) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isMobile ? 6 : 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: isMobile ? 14 : 18,
+            backgroundColor: color.withOpacity(0.1),
+            child: user.photo != null
+                ? ClipOval(child: Image.network(user.photo!, width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, fit: BoxFit.cover))
+                : Text(
+                    user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: isMobile ? 12 : 14),
+                  ),
+          ),
+          SizedBox(width: isMobile ? 8 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.fullName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 12 : 14,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: isMobile ? 10 : 12, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${user.city}, ${user.country}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: isMobile ? 10 : 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          StarRating(
+            rating: user.averageRating ?? 5.0,
+            size: isMobile ? 10 : 12,
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: isMobile ? 10 : 12,
+            color: Colors.grey[400],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyDonations(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -310,7 +526,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     );
   }
 
-  Widget _buildNearbyLibraries() {
+  Widget _buildNearbyLibraries(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -331,15 +547,15 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: MediaQuery.of(context).size.width < 600 ? 100 : 120,
+          height: isMobile ? 100 : 120,
           child: ListView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 4),
             children: [
-              _buildLibraryCard('Biblioteca Sol', 'Mendoza', '2.3 km', Icons.school),
-              _buildLibraryCard('Centro Norte', 'Mar del Plata', '5.1 km', Icons.local_library),
-              _buildLibraryCard('Escuela Esperanza', 'Salta', '8.7 km', Icons.school),
+              _buildLibraryCard('Biblioteca Sol', 'Mendoza', '2.3 km', Icons.school, isMobile),
+              _buildLibraryCard('Centro Norte', 'Mar del Plata', '5.1 km', Icons.local_library, isMobile),
+              _buildLibraryCard('Escuela Esperanza', 'Salta', '8.7 km', Icons.school, isMobile),
             ],
           ),
         ),
@@ -347,8 +563,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     );
   }
 
-  Widget _buildLibraryCard(String name, String location, String distance, IconData icon) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+  Widget _buildLibraryCard(String name, String location, String distance, IconData icon, bool isMobile) {
     return Container(
       width: isMobile ? 120 : 140,
       margin: const EdgeInsets.only(right: 8),
@@ -394,7 +609,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
     );
   }
 
-  Widget _buildPersonalStats() {
+  Widget _buildPersonalStats(AppLocalizations l10n, bool isMobile) {
     return Card(
       elevation: 4,
       child: Padding(
@@ -478,7 +693,7 @@ class _DonorDashboardScreenState extends State<DonorDashboardScreen> {
       onTap: (index) {
         switch (index) {
           case 0:
-            // Ya estamos en home
+            context.go('/home'); // Ir al home principal con todos los usuarios
             break;
           case 1:
             context.push('/donations');

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
+import '../../utils/app_localizations.dart';
 
 /// 📚 PuenteHumano Home Screen
 /// "Un puente humano para que los libros lleguen a donde más se necesitan"
@@ -95,6 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildQuickActions(user, isMobile),
                 SizedBox(height: isMobile ? 16 : 24),
                 
+                // Interacciones entre roles
+                _buildRoleInteractions(user, isMobile),
+                SizedBox(height: isMobile ? 16 : 24),
+                
                 // Estadísticas del usuario
                 _buildUserStats(user, isMobile),
                 SizedBox(height: isMobile ? 16 : 24),
@@ -183,11 +188,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActions(UserProfile user, bool isMobile) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Acciones Rápidas',
+          l10n.quickActions,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: isMobile ? 18 : 22,
@@ -196,6 +202,82 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(height: isMobile ? 12 : 16),
         _buildActionGrid(user, isMobile),
       ],
+    );
+  }
+
+  Widget _buildRoleInteractions(UserProfile user, bool isMobile) {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 16 : 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.people_alt, color: Colors.indigo[600], size: isMobile ? 24 : 28),
+                SizedBox(width: isMobile ? 8 : 12),
+                Text(
+                  l10n.connectWithUsers,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 16 : 18,
+                    color: Colors.indigo[600],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 12 : 16),
+            Text(
+              _getRoleInteractionDescription(user.role),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: isMobile ? 12 : 14,
+              ),
+            ),
+            SizedBox(height: isMobile ? 16 : 20),
+            _buildInteractionButtons(user.role, isMobile),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInteractionButtons(UserRole userRole, bool isMobile) {
+    final buttons = _getInteractionButtons(userRole);
+    
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isMobile ? 2 : 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 2.5,
+      ),
+      itemCount: buttons.length,
+      itemBuilder: (context, index) {
+        final button = buttons[index];
+        return ElevatedButton.icon(
+          onPressed: button['onTap'],
+          icon: Icon(button['icon'], size: isMobile ? 16 : 18),
+          label: Text(
+            button['title'],
+            style: TextStyle(fontSize: isMobile ? 11 : 13),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: button['color'].withOpacity(0.1),
+            foregroundColor: button['color'],
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: button['color'].withOpacity(0.3)),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -657,86 +739,111 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Map<String, dynamic>> _getActionsForRole(UserRole role) {
+    final l10n = AppLocalizations.of(context);
     switch (role) {
       case UserRole.donante:
         return [
           {
-            'title': 'Donar Libros',
+            'title': l10n.donateBooks,
             'icon': Icons.add_circle,
             'color': Colors.green,
             'onTap': () => context.push('/donations/create'),
           },
           {
-            'title': 'Buscar Bibliotecas',
-            'icon': Icons.search,
-            'color': Colors.orange,
-            'onTap': () => context.push('/libraries'),
-          },
-          {
-            'title': 'Ver Transportistas',
-            'icon': Icons.local_shipping,
+            'title': l10n.viewLibraries,
+            'icon': Icons.library_books,
             'color': Colors.purple,
-            'onTap': () => context.push('/transporters'),
+            'onTap': () => context.push('/users?role=biblioteca'),
           },
           {
-            'title': 'Mis Donaciones',
+            'title': l10n.viewTransporters,
+            'icon': Icons.local_shipping,
+            'color': Colors.green,
+            'onTap': () => context.push('/users?role=transportista'),
+          },
+          {
+            'title': l10n.myDonations,
             'icon': Icons.history,
             'color': Colors.blue,
             'onTap': () => context.push('/donations'),
+          },
+          {
+            'title': l10n.users,
+            'icon': Icons.people,
+            'color': Colors.teal,
+            'onTap': () => context.push('/users'),
           },
         ];
       case UserRole.transportista:
         return [
           {
-            'title': 'Crear Viaje',
+            'title': l10n.createTrip,
             'icon': Icons.add_road,
             'color': Colors.green,
             'onTap': () => context.push('/trips/create'),
           },
           {
-            'title': 'Ver Donaciones',
-            'icon': Icons.inventory,
+            'title': l10n.viewDonors,
+            'icon': Icons.volunteer_activism,
             'color': Colors.blue,
-            'onTap': () => context.push('/donations'),
+            'onTap': () => context.push('/users?role=donante'),
           },
           {
-            'title': 'Mapa de Rutas',
+            'title': l10n.routeMap,
             'icon': Icons.map,
             'color': Colors.purple,
             'onTap': () => context.push('/map'),
           },
           {
-            'title': 'Mis Viajes',
+            'title': l10n.myTrips,
             'icon': Icons.history,
             'color': Colors.orange,
             'onTap': () => context.push('/trips'),
+          },
+          {
+            'title': l10n.users,
+            'icon': Icons.people,
+            'color': Colors.teal,
+            'onTap': () => context.push('/users'),
           },
         ];
       case UserRole.biblioteca:
         return [
           {
-            'title': 'Solicitar Libros',
+            'title': l10n.requestBooks,
             'icon': Icons.request_page,
             'color': Colors.purple,
             'onTap': () => context.push('/requests/create'),
           },
           {
-            'title': 'Ver Donantes',
-            'icon': Icons.people,
+            'title': l10n.viewDonors,
+            'icon': Icons.volunteer_activism,
             'color': Colors.blue,
-            'onTap': () => context.push('/donors'),
+            'onTap': () => context.push('/users?role=donante'),
           },
           {
-            'title': 'Mi Inventario',
+            'title': l10n.viewTransporters,
+            'icon': Icons.local_shipping,
+            'color': Colors.green,
+            'onTap': () => context.push('/users?role=transportista'),
+          },
+          {
+            'title': l10n.myInventory,
             'icon': Icons.inventory_2,
             'color': Colors.green,
             'onTap': () => context.push('/inventory'),
           },
           {
-            'title': 'Donaciones Recibidas',
+            'title': l10n.receivedDonations,
             'icon': Icons.inbox,
             'color': Colors.orange,
             'onTap': () => context.push('/donations/received'),
+          },
+          {
+            'title': l10n.users,
+            'icon': Icons.people,
+            'color': Colors.teal,
+            'onTap': () => context.push('/users'),
           },
         ];
     }
@@ -753,6 +860,87 @@ class _HomeScreenState extends State<HomeScreen> {
       case UserRole.biblioteca:
         context.push('/library-dashboard');
         break;
+    }
+  }
+
+  String _getRoleInteractionDescription(UserRole role) {
+    final l10n = AppLocalizations.of(context);
+    switch (role) {
+      case UserRole.donante:
+        return l10n.donorInteractionDesc;
+      case UserRole.transportista:
+        return l10n.transporterInteractionDesc;
+      case UserRole.biblioteca:
+        return l10n.libraryInteractionDesc;
+    }
+  }
+
+  List<Map<String, dynamic>> _getInteractionButtons(UserRole role) {
+    final l10n = AppLocalizations.of(context);
+    switch (role) {
+      case UserRole.donante:
+        return [
+          {
+            'title': l10n.viewLibraries,
+            'icon': Icons.library_books,
+            'color': Colors.purple[600]!,
+            'onTap': () => context.push('/users?role=biblioteca'),
+          },
+          {
+            'title': l10n.viewTransporters,
+            'icon': Icons.local_shipping,
+            'color': Colors.green[600]!,
+            'onTap': () => context.push('/users?role=transportista'),
+          },
+          {
+            'title': l10n.allUsers,
+            'icon': Icons.people,
+            'color': Colors.indigo[600]!,
+            'onTap': () => context.push('/users'),
+          },
+        ];
+      case UserRole.transportista:
+        return [
+          {
+            'title': l10n.viewDonors,
+            'icon': Icons.volunteer_activism,
+            'color': Colors.blue[600]!,
+            'onTap': () => context.push('/users?role=donante'),
+          },
+          {
+            'title': l10n.viewLibraries,
+            'icon': Icons.library_books,
+            'color': Colors.purple[600]!,
+            'onTap': () => context.push('/users?role=biblioteca'),
+          },
+          {
+            'title': l10n.allUsers,
+            'icon': Icons.people,
+            'color': Colors.indigo[600]!,
+            'onTap': () => context.push('/users'),
+          },
+        ];
+      case UserRole.biblioteca:
+        return [
+          {
+            'title': l10n.viewDonors,
+            'icon': Icons.volunteer_activism,
+            'color': Colors.blue[600]!,
+            'onTap': () => context.push('/users?role=donante'),
+          },
+          {
+            'title': l10n.viewTransporters,
+            'icon': Icons.local_shipping,
+            'color': Colors.green[600]!,
+            'onTap': () => context.push('/users?role=transportista'),
+          },
+          {
+            'title': l10n.allUsers,
+            'icon': Icons.people,
+            'color': Colors.indigo[600]!,
+            'onTap': () => context.push('/users'),
+          },
+        ];
     }
   }
 }

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider_simple.dart';
+import '../../core/models/user_profile.dart';
+import '../../core/services/user_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/star_rating.dart';
 
 class TransporterDashboardScreen extends StatefulWidget {
   const TransporterDashboardScreen({super.key});
@@ -11,25 +15,67 @@ class TransporterDashboardScreen extends StatefulWidget {
 }
 
 class _TransporterDashboardScreenState extends State<TransporterDashboardScreen> {
+  final UserService _userService = UserService();
+  List<UserProfile> _donantes = [];
+  List<UserProfile> _bibliotecas = [];
+  List<UserProfile> _transportistas = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final futures = await Future.wait([
+        _userService.getUsersByRole(UserRole.donante),
+        _userService.getUsersByRole(UserRole.biblioteca),
+        _userService.getUsersByRole(UserRole.transportista),
+      ]);
+      
+      setState(() {
+        _donantes = futures[0];
+        _bibliotecas = futures[1];
+        _transportistas = futures[2];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SimpleAuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
+        final l10n = AppLocalizations.of(context);
+        final isMobile = MediaQuery.of(context).size.width < 600;
         
         return Scaffold(
           appBar: AppBar(
-            title: Text('¡Hola ${user?.fullName ?? 'Transportista'}!'),
+            title: Text('¡Hola ${user?.fullName ?? l10n.transporter}!'),
             backgroundColor: Colors.green[600],
             foregroundColor: Colors.white,
             actions: [
               IconButton(
+                icon: const Icon(Icons.home),
+                onPressed: () => context.go('/home'),
+                tooltip: l10n.backToHome,
+              ),
+              IconButton(
                 icon: const Icon(Icons.notifications),
                 onPressed: () => context.push('/notifications'),
+                tooltip: l10n.notifications,
               ),
               IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () => _showLogoutDialog(context),
+                tooltip: l10n.logout,
               ),
             ],
           ),
@@ -47,19 +93,23 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
                   SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                   
                   // Acciones rápidas para transportistas
-                  _buildQuickActions(),
+                  _buildQuickActions(l10n, isMobile),
+                  SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
+                  
+                  // Todos los usuarios y sus rutas
+                  _buildAllUsersSection(l10n, isMobile),
                   SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                   
                   // Mis viajes activos
-                  _buildActiveTrips(),
+                  _buildActiveTrips(l10n, isMobile),
                   SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                   
                   // Donaciones disponibles
-                  _buildAvailableDonations(),
+                  _buildAvailableDonations(l10n, isMobile),
                   SizedBox(height: MediaQuery.of(context).size.width < 600 ? 16 : 24),
                   
                   // Estadísticas de transporte
-                  _buildTransportStats(),
+                  _buildTransportStats(l10n, isMobile),
                   
                   // Espaciado final para navegación
                   const SizedBox(height: 100),
@@ -109,12 +159,12 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Acciones Rápidas',
+          l10n.quickActions,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -130,7 +180,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
                     children: [
                       Expanded(
                         child: _buildActionCard(
-                          'Crear Viaje',
+                          l10n.createTrip,
                           Icons.add_road,
                           Colors.green,
                           () => context.push('/trips/create'),
@@ -139,10 +189,10 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionCard(
-                          'Ver Donaciones',
-                          Icons.inventory,
+                          l10n.viewDonors,
+                          Icons.volunteer_activism,
                           Colors.blue,
-                          () => context.push('/donations'),
+                          () => context.push('/users?role=donante'),
                         ),
                       ),
                     ],
@@ -152,19 +202,19 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
                     children: [
                       Expanded(
                         child: _buildActionCard(
-                          'Mapa de Rutas',
-                          Icons.map,
+                          l10n.viewLibraries,
+                          Icons.library_books,
                           Colors.purple,
-                          () => context.push('/map'),
+                          () => context.push('/users?role=biblioteca'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionCard(
-                          'Mi Perfil',
-                          Icons.person,
-                          Colors.orange,
-                          () => context.push('/profile'),
+                          l10n.users,
+                          Icons.people,
+                          Colors.teal,
+                          () => context.push('/users'),
                         ),
                       ),
                     ],
@@ -258,7 +308,170 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
     );
   }
 
-  Widget _buildActiveTrips() {
+  Widget _buildAllUsersSection(AppLocalizations l10n, bool isMobile) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🌍 Red de Usuarios y Rutas',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Donantes
+        _buildUserRoleCard(
+          title: '📚 ${l10n.viewDonors} (${_donantes.length})',
+          users: _donantes.take(3).toList(),
+          color: Colors.blue[600]!,
+          onViewAll: () => context.push('/users?role=donante'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+        const SizedBox(height: 12),
+        
+        // Bibliotecas
+        _buildUserRoleCard(
+          title: '📖 ${l10n.viewLibraries} (${_bibliotecas.length})',
+          users: _bibliotecas.take(3).toList(),
+          color: Colors.purple[600]!,
+          onViewAll: () => context.push('/users?role=biblioteca'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+        const SizedBox(height: 12),
+        
+        // Otros Transportistas
+        _buildUserRoleCard(
+          title: '🚛 ${l10n.viewTransporters} (${_transportistas.length})',
+          users: _transportistas.take(3).toList(),
+          color: Colors.green[600]!,
+          onViewAll: () => context.push('/users?role=transportista'),
+          l10n: l10n,
+          isMobile: isMobile,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserRoleCard({
+    required String title,
+    required List<UserProfile> users,
+    required Color color,
+    required VoidCallback onViewAll,
+    required AppLocalizations l10n,
+    required bool isMobile,
+  }) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 14 : 16,
+                      color: color,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onViewAll,
+                  child: Text(
+                    'Ver todos',
+                    style: TextStyle(fontSize: isMobile ? 12 : 14),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 8 : 12),
+            if (users.isEmpty)
+              Text(
+                'No hay usuarios registrados en este rol',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: isMobile ? 12 : 14,
+                ),
+              )
+            else
+              ...users.map((user) => _buildUserRouteItem(user, color, isMobile)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserRouteItem(UserProfile user, Color color, bool isMobile) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: isMobile ? 16 : 20,
+            backgroundColor: color.withOpacity(0.1),
+            child: user.photo != null
+                ? ClipOval(child: Image.network(user.photo!, width: 32, height: 32, fit: BoxFit.cover))
+                : Text(
+                    user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
+          ),
+          SizedBox(width: isMobile ? 8 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.fullName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 13 : 14,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: isMobile ? 12 : 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${user.city}, ${user.country}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: isMobile ? 11 : 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          StarRating(
+            rating: user.averageRating ?? 5.0,
+            size: isMobile ? 12 : 14,
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: isMobile ? 12 : 14,
+            color: Colors.grey[400],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveTrips(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -266,7 +479,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Mis Viajes Activos',
+              '🚛 ${l10n.myTrips}',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -320,7 +533,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
     );
   }
 
-  Widget _buildAvailableDonations() {
+  Widget _buildAvailableDonations(AppLocalizations l10n, bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -462,7 +675,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
     );
   }
 
-  Widget _buildTransportStats() {
+  Widget _buildTransportStats(AppLocalizations l10n, bool isMobile) {
     return Card(
       elevation: 4,
       child: Padding(
@@ -546,7 +759,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
       onTap: (index) {
         switch (index) {
           case 0:
-            // Ya estamos en home
+            context.go('/home'); // Ir al home principal con todos los usuarios
             break;
           case 1:
             context.push('/trips');
