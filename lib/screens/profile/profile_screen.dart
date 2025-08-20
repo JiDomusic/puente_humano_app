@@ -2,14 +2,64 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../../core/services/storage_service.dart';
 import '../../core/models/user_profile.dart';
 import '../../utils/app_localizations.dart';
 import '../../widgets/language_toggle_button.dart';
 import 'profile_edit_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+  final StorageService _storageService = StorageService();
+
+  Future<void> _changeProfilePhoto() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        final authProvider = context.read<SimpleAuthProvider>();
+        final user = authProvider.currentUser;
+        
+        if (user != null) {
+          final photoUrl = await _storageService.uploadProfilePhoto(
+            user.id, 
+            File(image.path)
+          );
+          
+          if (photoUrl != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Foto de perfil actualizada'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error actualizando foto: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +85,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
+      body: Consumer<SimpleAuthProvider>(
         builder: (context, authProvider, child) {
           if (authProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -101,15 +151,39 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.grey[300],
-              backgroundImage: user.photo != null 
-                ? CachedNetworkImageProvider(user.photo!)
-                : null,
-              child: user.photo == null 
-                ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                : null,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: user.photo != null 
+                    ? CachedNetworkImageProvider(user.photo!)
+                    : null,
+                  child: user.photo == null 
+                    ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                    : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _changeProfilePhoto,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -226,7 +300,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildAdminSection(BuildContext context, UserProfile user) {
     // Solo mostrar para administradores autorizados
-    final isAdmin = context.watch<AuthProvider>().isAdmin;
+    final isAdmin = context.watch<SimpleAuthProvider>().isAdmin;
     
     if (!isAdmin) {
       return const SizedBox.shrink(); // No mostrar nada si no es admin

@@ -84,7 +84,7 @@ class WelcomeScreen extends StatelessWidget {
                       constraints: BoxConstraints(maxWidth: isWide ? 800 : double.infinity),
                       padding: EdgeInsets.all(isWide ? 32 : 24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8DC).withOpacity(0.8),
+                        color: const Color(0xFFF8C807).withOpacity(0.8),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
@@ -104,26 +104,55 @@ class WelcomeScreen extends StatelessWidget {
                           SizedBox(height: isWide ? 24 : 16),
                           if (isWide)
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
-                                const SizedBox(width: 20),
-                                _buildFeature(context, Icons.local_shipping, 'Transporta'),
-                                const SizedBox(width: 20),
-                                _buildFeature(context, Icons.library_books, 'Recibe'),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    child: _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    child: _buildFeature(context, Icons.local_shipping, 'Transporta'),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    child: _buildFeature(context, Icons.library_books, 'Recibe'),
+                                  ),
+                                ),
                               ],
                             )
                           else
                             Column(
                               children: [
+                                // Transporta en el centro
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                                  child: _buildFeature(context, Icons.local_shipping, 'Transporta'),
+                                ),
+                                const SizedBox(height: 32),
+                                // Dona y Recibe abajo, separados
                                 Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
-                                    const SizedBox(width: 16),
-                                    _buildFeature(context, Icons.local_shipping, 'Transporta'),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        child: _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                                        child: _buildFeature(context, Icons.library_books, 'Recibe'),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                const SizedBox(height: 20),
-                                _buildFeature(context, Icons.library_books, 'Recibe'),
                               ],
                             ),
                         ],
@@ -143,8 +172,10 @@ class WelcomeScreen extends StatelessWidget {
                               onPressed: () => context.push('/login'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: Theme.of(context).colorScheme.primary,
-                                padding: EdgeInsets.symmetric(vertical: isWide ? 20 : 16),
+                                foregroundColor: const Color(0xFF1976D2), // Azul sólido visible
+                                elevation: 6,
+                                shadowColor: Colors.black26,
+                                padding: EdgeInsets.symmetric(vertical: isWide ? 20 : 16, horizontal: 24),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -166,9 +197,10 @@ class WelcomeScreen extends StatelessWidget {
                             child: OutlinedButton(
                               onPressed: () => context.push('/register'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF8B4513), // Marrón oscuro visible
+                                backgroundColor: Colors.white,
                                 side: const BorderSide(color: Colors.white, width: 2),
-                                padding: EdgeInsets.symmetric(vertical: isWide ? 20 : 16),
+                                padding: EdgeInsets.symmetric(vertical: isWide ? 20 : 16, horizontal: 24),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

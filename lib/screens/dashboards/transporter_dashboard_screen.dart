@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 
 class TransporterDashboardScreen extends StatefulWidget {
   const TransporterDashboardScreen({super.key});
@@ -13,7 +13,7 @@ class TransporterDashboardScreen extends StatefulWidget {
 class _TransporterDashboardScreenState extends State<TransporterDashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
+    return Consumer<SimpleAuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
         
@@ -576,7 +576,7 @@ class _TransporterDashboardScreenState extends State<TransporterDashboardScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.read<AuthProvider>().signOut();
+              context.read<SimpleAuthProvider>().signOut();
               context.go('/login');
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

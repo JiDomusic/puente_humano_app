@@ -24,12 +24,17 @@ class AuthService {
       await _storageService.createAvatarsBucketIfNotExists();
     } catch (e) {
       // Silenciar errores de storage para no afectar la funcionalidad principal
-      // print('Storage initialization failed silently: $e');
+      print('Storage initialization failed silently: $e');
     }
   }
 
   Map<String, dynamic>? get currentUser => _currentUserData;
   bool get isLoggedIn => _currentUserData != null;
+  
+  // Método para sincronizar estado desde el provider
+  void setCurrentUserData(Map<String, dynamic>? userData) {
+    _currentUserData = userData != null ? Map<String, dynamic>.from(userData) : null;
+  }
 
   // Registro sin email usando solo tabla users (sin Supabase Auth)
   Future<Map<String, dynamic>> signUp({
@@ -113,7 +118,7 @@ class AuthService {
       print('✅ Usuario autenticado: ${userProfile['full_name']}');
 
       // Almacenar usuario actual
-      _currentUserData = userProfile;
+      _currentUserData = Map<String, dynamic>.from(userProfile);
 
       return {
         'success': true,
@@ -170,6 +175,12 @@ class AuthService {
         .from('users')
         .update(updates)
         .eq('id', currentUser!['id']);
+    
+    // Actualizar el estado local _currentUserData
+    _currentUserData = {
+      ..._currentUserData!,
+      ...updates,
+    };
   }
 
   // Actualizar foto de perfil
@@ -189,6 +200,12 @@ class AuthService {
       if (newPhotoUrl != null) {
         // Actualizar URL en la base de datos
         await updateProfile({'photo': newPhotoUrl});
+        
+        // Actualizar el estado local _currentUserData
+        _currentUserData = {
+          ..._currentUserData!,
+          'photo': newPhotoUrl,
+        };
         
         // Eliminar foto anterior si existe
         if (currentProfile?.photo != null) {

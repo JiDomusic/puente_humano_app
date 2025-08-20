@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
 
 class ProfileEditScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   void _initializeControllers() {
-    final user = context.read<AuthProvider>().currentUser;
+    final user = context.read<SimpleAuthProvider>().currentUser;
     _fullNameController = TextEditingController(text: user?.fullName ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _cityController = TextEditingController(text: user?.city ?? '');
@@ -71,7 +71,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
+      body: Consumer<SimpleAuthProvider>(
         builder: (context, authProvider, child) {
           if (authProvider.currentUser == null) {
             return const Center(
@@ -458,7 +458,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _isLoading = true;
     });
 
-    final success = await context.read<AuthProvider>().updateProfilePhoto(imageFile);
+    final success = await context.read<SimpleAuthProvider>().updateProfilePhoto(imageFile);
 
     if (mounted) {
       setState(() {
@@ -476,7 +476,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.read<AuthProvider>().error ?? 
+              context.read<SimpleAuthProvider>().error ?? 
               'Error al subir la foto'
             ),
             backgroundColor: Colors.red,
@@ -491,7 +491,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       _isLoading = true;
     });
 
-    final success = await context.read<AuthProvider>().removeProfilePhoto();
+    final success = await context.read<SimpleAuthProvider>().removeProfilePhoto();
 
     if (mounted) {
       setState(() {
@@ -509,7 +509,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.read<AuthProvider>().error ?? 
+              context.read<SimpleAuthProvider>().error ?? 
               'Error al eliminar la foto'
             ),
             backgroundColor: Colors.red,
@@ -543,7 +543,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'language': _selectedLanguage,
       };
 
-      final success = await context.read<AuthProvider>().updateProfile(updates);
+      final success = await context.read<SimpleAuthProvider>().updateProfile(updates);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -557,7 +557,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.read<AuthProvider>().error ?? 
+              context.read<SimpleAuthProvider>().error ?? 
               'Error al actualizar el perfil'
             ),
             backgroundColor: Colors.red,

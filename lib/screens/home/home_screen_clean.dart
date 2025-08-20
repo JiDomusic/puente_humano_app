@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
 import '../dashboards/donor_dashboard_screen.dart';
 import '../dashboards/transporter_dashboard_screen.dart';
@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
+    return Consumer<SimpleAuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
         

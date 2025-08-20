@@ -129,6 +129,9 @@ class SimpleAuthProvider extends ChangeNotifier {
         final userData = response['user'];
         _currentUser = UserProfile.fromJson(userData);
         
+        // Sincronizar con AuthService
+        _authService.setCurrentUserData(userData);
+        
         // Guardar sesión
         await _saveSession(_currentUser!.id);
         
@@ -163,16 +166,22 @@ class SimpleAuthProvider extends ChangeNotifier {
           .single();
       
       _currentUser = UserProfile.fromJson(userProfile);
+      
+      // IMPORTANTE: Sincronizar con AuthService
+      _authService.setCurrentUserData(userProfile);
+      
       print('✅ Perfil cargado: ${_currentUser!.fullName}');
     } catch (e) {
       print('❌ Error cargando perfil: $e');
       _currentUser = null;
+      _authService.setCurrentUserData(null);
     }
   }
 
   // CERRAR SESIÓN
   Future<void> signOut() async {
     _currentUser = null;
+    _authService.setCurrentUserData(null);
     await _clearSession();
     notifyListeners();
   }
@@ -211,6 +220,90 @@ class SimpleAuthProvider extends ChangeNotifier {
       await prefs.remove('user_id');
     } catch (e) {
       print('Error limpiando sesión: $e');
+    }
+  }
+
+  // RESETEAR CONTRASEÑA
+  Future<bool> resetPassword(String email) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _authService.resetPassword(email);
+      return true;
+    } catch (e) {
+      print('❌ Error en resetPassword: $e');
+      _setError('Error al resetear contraseña: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // ACTUALIZAR FOTO DE PERFIL
+  Future<bool> updateProfilePhoto(dynamic imageFile) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final newPhotoUrl = await _authService.updateProfilePhoto(imageFile);
+      if (newPhotoUrl != null && _currentUser != null) {
+        _currentUser = _currentUser!.copyWith(photo: newPhotoUrl);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error en updateProfilePhoto: $e');
+      _setError('Error actualizando foto: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // REMOVER FOTO DE PERFIL
+  Future<bool> removeProfilePhoto() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final success = await _authService.removeProfilePhoto();
+      if (success && _currentUser != null) {
+        _currentUser = _currentUser!.copyWith(photo: null);
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error en removeProfilePhoto: $e');
+      _setError('Error removiendo foto: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // ACTUALIZAR PERFIL
+  Future<bool> updateProfile(Map<String, dynamic> updates) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _authService.updateProfile(updates);
+      
+      // Recargar el perfil del usuario
+      if (_currentUser != null) {
+        await _loadUserById(_currentUser!.id);
+      }
+      
+      return true;
+    } catch (e) {
+      print('❌ Error en updateProfile: $e');
+      _setError('Error actualizando perfil: $e');
+      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 }

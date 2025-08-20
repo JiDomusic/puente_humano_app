@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
+import '../../core/services/storage_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,6 +32,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _currentPage = 0;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  
+  // Variables para foto de perfil
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+  final StorageService _storageService = StorageService();
 
   @override
   void dispose() {
@@ -44,6 +52,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // Seleccionar imagen de perfil
+  Future<void> _pickProfileImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error seleccionando imagen: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate() || _selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,6 +90,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final authProvider = context.read<SimpleAuthProvider>();
     
+    String? profilePhotoUrl;
+    
+    // Si hay imagen, subirla primero
+    if (_profileImage != null) {
+      try {
+        profilePhotoUrl = await _storageService.uploadProfilePhoto(
+          'temp_${DateTime.now().millisecondsSinceEpoch}', 
+          _profileImage!
+        );
+      } catch (e) {
+        print('Error subiendo foto: $e');
+      }
+    }
+
     final success = await authProvider.signUp(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -184,7 +231,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: _previousPage,
-                            child: const Text('Anterior'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF1976D2),
+                              side: const BorderSide(color: Color(0xFF1976D2), width: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Anterior', style: TextStyle(fontWeight: FontWeight.w600)),
                           ),
                         ),
                       
@@ -197,13 +252,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onPressed: authProvider.isLoading 
                                   ? null 
                                   : (_currentPage == 2 ? _handleRegister : _nextPage),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1976D2),
+                                foregroundColor: Colors.white,
+                                elevation: 4,
+                                shadowColor: Colors.black26,
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: Colors.grey[400],
+                                disabledForegroundColor: Colors.grey[600],
+                              ),
                               child: authProvider.isLoading
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
                                     )
-                                  : Text(_currentPage == 2 ? 'Registrarse' : 'Siguiente'),
+                                  : Text(
+                                      _currentPage == 2 ? 'Registrarse' : 'Siguiente',
+                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                                    ),
                             );
                           },
                         ),
@@ -602,7 +675,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               TextButton(
                 onPressed: () => context.push('/login'),
-                child: const Text('Inicia sesión'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF1976D2),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                child: const Text('Inicia sesión', style: TextStyle(fontWeight: FontWeight.w600)),
               ),
             ],
           ),

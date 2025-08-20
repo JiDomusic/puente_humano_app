@@ -7,13 +7,13 @@ class AdminService {
   // Verificar si un usuario es administrador
   Future<bool> isAdmin(String email) async {
     try {
-      final user = await _supabase
-          .from('users')
-          .select('role')
+      final adminUser = await _supabase
+          .from('admin_users')
+          .select('is_active')
           .eq('email', email.toLowerCase())
           .maybeSingle();
       
-      return user != null && user['role'] == 'admin';
+      return adminUser != null && adminUser['is_active'] == true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error verificando admin: $e');
@@ -25,20 +25,28 @@ class AdminService {
   // Autenticar administrador
   Future<bool> authenticateAdmin(String email, String password) async {
     try {
-      final user = await _supabase
-          .from('users')
+      final adminUser = await _supabase
+          .from('admin_users')
           .select('*')
           .eq('email', email.toLowerCase())
-          .eq('role', 'admin')
+          .eq('is_active', true)
           .maybeSingle();
       
-      if (user != null) {
-        // En un sistema real, verificarías la contraseña hash
-        // Por ahora, simplificado para testing
-        if (kDebugMode) {
-          debugPrint('Admin encontrado: ${user['email']}');
+      if (adminUser != null) {
+        // Por ahora, contraseña simplificada para testing
+        // En producción deberías usar hash de contraseña
+        if (password == 'admin123') {
+          // Actualizar último login
+          await _supabase
+              .from('admin_users')
+              .update({'last_login': DateTime.now().toIso8601String()})
+              .eq('email', email.toLowerCase());
+              
+          if (kDebugMode) {
+            debugPrint('Admin autenticado: ${adminUser['email']}');
+          }
+          return true;
         }
-        return true;
       }
       
       return false;
@@ -53,14 +61,14 @@ class AdminService {
   // Obtener información del admin
   Future<Map<String, dynamic>?> getAdminInfo(String email) async {
     try {
-      final user = await _supabase
-          .from('users')
+      final adminUser = await _supabase
+          .from('admin_users')
           .select('*')
           .eq('email', email.toLowerCase())
-          .eq('role', 'admin')
+          .eq('is_active', true)
           .maybeSingle();
       
-      return user;
+      return adminUser;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error obteniendo info admin: $e');

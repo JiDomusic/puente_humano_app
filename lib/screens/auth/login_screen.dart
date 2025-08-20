@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<SimpleAuthProvider>();
     
     final success = await authProvider.signIn(
       email: _emailController.text.trim(),
@@ -189,18 +189,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: MediaQuery.of(context).size.width < 600 ? 24 : 32),
                 
                 // Botón de login responsivo
-                Consumer<AuthProvider>(
+                Consumer<SimpleAuthProvider>(
                   builder: (context, authProvider, child) {
                     return ElevatedButton(
                       onPressed: authProvider.isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
+                        backgroundColor: const Color(0xFF1976D2), // Azul más sólido
                         foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: Colors.black26,
                         padding: EdgeInsets.symmetric(
-                          vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                          vertical: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+                          horizontal: 24,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: authProvider.isLoading
@@ -237,10 +240,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () => context.push('/register'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF1976D2),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       child: Text(
                         'Regístrate',
                         style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width < 600 ? 12 : 14,
+                          fontSize: MediaQuery.of(context).size.width < 600 ? 14 : 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -268,15 +276,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[600],
+                      backgroundColor: const Color(0xFFD32F2F), // Rojo más sólido
                       foregroundColor: Colors.white,
+                      elevation: 6,
+                      shadowColor: const Color(0xFFD32F2F).withOpacity(0.4),
                       padding: EdgeInsets.symmetric(
-                        vertical: MediaQuery.of(context).size.width < 600 ? 12 : 16,
+                        vertical: MediaQuery.of(context).size.width < 600 ? 16 : 20,
+                        horizontal: 24,
                       ),
-                      elevation: 8,
-                      shadowColor: Colors.red[300],
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
@@ -340,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ElevatedButton(
             onPressed: () async {
               if (emailController.text.isNotEmpty) {
-                final authProvider = context.read<AuthProvider>();
+                final authProvider = context.read<SimpleAuthProvider>();
                 final success = await authProvider.resetPassword(emailController.text);
                 
                 if (mounted && context.mounted) {

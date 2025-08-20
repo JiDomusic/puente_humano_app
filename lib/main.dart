@@ -12,7 +12,6 @@ import 'core/services/auth_service.dart';
 import 'core/services/database_service.dart';
 import 'providers/auth_provider_simple.dart';
 import 'providers/admin_auth_provider.dart';
-import 'providers/user_provider.dart';
 import 'providers/language_provider.dart';
 
 Future<void> main() async {
@@ -42,7 +41,6 @@ class PuenteHumanoApp extends StatelessWidget {
           create: (context) => SimpleAuthProvider(),
         ),
         ChangeNotifierProvider<AdminAuthProvider>(create: (_) => AdminAuthProvider()),
-        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
         ChangeNotifierProvider<LanguageProvider>(create: (_) => LanguageProvider()),
       ],
       child: AppInitializer(),
