@@ -11,16 +11,10 @@ class WelcomeScreen extends StatelessWidget {
     final isWide = screenSize.width > 600;
     
     return Scaffold(
+      backgroundColor: const Color(0xE6D282),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            ],
-          ),
+        decoration: const BoxDecoration(
+          color: Color(0xE6D282),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -62,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
                     Text(
                       AppConfig.appName,
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        color: Colors.white,
+                        color: const Color(0xFF8B4513),
                         fontWeight: FontWeight.bold,
                         fontSize: isWide ? 48 : null,
                       ),
@@ -76,7 +70,7 @@ class WelcomeScreen extends StatelessWidget {
                       child: Text(
                         AppConfig.appSlogan,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
+                          color: const Color(0xFF8B4513),
                           fontSize: isWide ? 24 : null,
                         ),
                         textAlign: TextAlign.center,
@@ -90,7 +84,7 @@ class WelcomeScreen extends StatelessWidget {
                       constraints: BoxConstraints(maxWidth: isWide ? 800 : double.infinity),
                       padding: EdgeInsets.all(isWide ? 32 : 24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: const Color(0xFFFFF8DC).withOpacity(0.8),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
@@ -112,7 +106,9 @@ class WelcomeScreen extends StatelessWidget {
                             Row(
                               children: [
                                 _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
+                                const SizedBox(width: 20),
                                 _buildFeature(context, Icons.local_shipping, 'Transporta'),
+                                const SizedBox(width: 20),
                                 _buildFeature(context, Icons.library_books, 'Recibe'),
                               ],
                             )
@@ -122,10 +118,11 @@ class WelcomeScreen extends StatelessWidget {
                                 Row(
                                   children: [
                                     _buildFeature(context, Icons.volunteer_activism, 'Dona libros'),
+                                    const SizedBox(width: 16),
                                     _buildFeature(context, Icons.local_shipping, 'Transporta'),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
                                 _buildFeature(context, Icons.library_books, 'Recibe'),
                               ],
                             ),
@@ -217,7 +214,7 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   Widget _buildFeature(BuildContext context, IconData icon, String text) {
-    return Expanded(
+    return Flexible(
       child: Column(
         children: [
           Container(

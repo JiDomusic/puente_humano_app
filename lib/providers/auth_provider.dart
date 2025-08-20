@@ -35,19 +35,7 @@ class AuthProvider extends ChangeNotifier {
     // Cargar datos en cache primero para respuesta rápida
     await _loadCachedUserData();
     
-    // Escuchar cambios de autenticación
-    _authService.authStateChanges.listen((AuthState state) async {
-      if (state.event == AuthChangeEvent.signedIn) {
-        await _loadUserProfile();
-      } else if (state.event == AuthChangeEvent.signedOut) {
-        _currentUser = null;
-        _isAdmin = false;
-        await _clearCachedUserData();
-        notifyListeners();
-      }
-    });
-
-    // Cargar usuario actual si ya está autenticado
+    // Sin Supabase Auth, verificamos si hay usuario en cache/memoria
     if (_authService.isLoggedIn) {
       await _loadUserProfile();
     }
@@ -57,7 +45,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadUserProfile() async {
     try {
-      _currentUser = await _authService.getUserProfile();
+      // Obtener datos del usuario actual desde AuthService
+      final currentUserData = _authService.currentUser;
+      if (currentUserData != null) {
+        _currentUser = UserProfile.fromJson(currentUserData);
+      } else {
+        _currentUser = await _authService.getUserProfile();
+      }
       
       // Verificar si es administrador
       if (_currentUser != null) {
@@ -126,16 +120,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _clearCachedUserData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('cached_user');
-      await prefs.remove('cached_is_admin');
-      await prefs.remove('cached_timestamp');
-    } catch (e) {
-      print('Error clearing cached user data: $e');
-    }
-  }
 
   Future<bool> signUp({
     required String email,

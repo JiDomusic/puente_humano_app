@@ -7,7 +7,7 @@ class AppTheme {
   static const Color secondaryColor = Color(AppConfig.secondaryColorValue);
   static const Color accentColor = Color(AppConfig.accentColorValue);
   
-  static const Color backgroundColor = Color(0xFFFAFAFA);
+  static const Color backgroundColor = Color(0xE6D282); // Darker golden ochre
   static const Color surfaceColor = Colors.white;
   static const Color errorColor = Color(0xFF000000);
   static const Color successColor = Color(0xFF424242);
@@ -17,12 +17,14 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: Brightness.light,
+    ).copyWith(
       primary: primaryColor,
       secondary: secondaryColor,
       surface: surfaceColor,
       background: backgroundColor,
       error: errorColor,
     ),
+    scaffoldBackgroundColor: const Color(0xE6D282),
     textTheme: GoogleFonts.poppinsTextTheme(
       const TextTheme(
         displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),

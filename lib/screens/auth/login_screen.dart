@@ -250,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: MediaQuery.of(context).size.width < 600 ? 12 : 16),
                 
                 // Botón para admins responsivo
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => context.go('/admin-login'),

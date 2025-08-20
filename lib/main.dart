@@ -18,16 +18,19 @@ import 'providers/language_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Supabase.initialize(
+  // Inicializar Supabase en paralelo con la construcción del widget
+  final supabaseInit = Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
   
-  runApp(const PuenteHumanoApp());
+  runApp(PuenteHumanoApp(supabaseInit: supabaseInit));
 }
 
 class PuenteHumanoApp extends StatelessWidget {
-  const PuenteHumanoApp({super.key});
+  final Future<void> supabaseInit;
+  
+  const PuenteHumanoApp({super.key, required this.supabaseInit});
 
   @override
   Widget build(BuildContext context) {
@@ -42,27 +45,47 @@ class PuenteHumanoApp extends StatelessWidget {
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
         ChangeNotifierProvider<LanguageProvider>(create: (_) => LanguageProvider()),
       ],
-      child: Consumer<LanguageProvider>(
-        builder: (context, languageProvider, child) {
-          return MaterialApp.router(
-            title: 'PuenteHumano',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            locale: languageProvider.locale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('es'),
-              Locale('en'),
-            ],
-            routerConfig: AppRouter.router,
-          );
-        },
-      ),
+      child: AppInitializer(),
+    );
+  }
+}
+
+class AppInitializer extends StatefulWidget {
+  @override
+  _AppInitializerState createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SimpleAuthProvider>().loadSession();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return MaterialApp.router(
+          title: 'PuenteHumano',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          locale: languageProvider.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('es'),
+            Locale('en'),
+          ],
+          routerConfig: AppRouter.router,
+        );
+      },
     );
   }
 }

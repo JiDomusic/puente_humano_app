@@ -10,6 +10,9 @@ class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final StorageService _storageService = StorageService();
   
+  // Usuario actual almacenado localmente (sin Supabase Auth)
+  Map<String, dynamic>? _currentUserData;
+  
   // Inicializar storage de forma silenciosa
   AuthService() {
     _initializeStorageSilently();
@@ -25,13 +28,10 @@ class AuthService {
     }
   }
 
-  User? get currentUser => _supabase.auth.currentUser;
-  bool get isLoggedIn => currentUser != null;
+  Map<String, dynamic>? get currentUser => _currentUserData;
+  bool get isLoggedIn => _currentUserData != null;
 
-  // Auth state stream
-  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
-
-  // Registro usando Supabase Auth + tabla users con referencia
+  // Registro sin email usando solo tabla users (sin Supabase Auth)
   Future<Map<String, dynamic>> signUp({
     required String email,
     required String password,
@@ -45,25 +45,17 @@ class AuthService {
     double? lng,
   }) async {
     try {
-      print('🔄 Iniciando registro con Supabase Auth...');
+      print('🔄 Iniciando registro sin email auth...');
       
-      // 1. Crear usuario en Supabase Auth
-      final authResponse = await _supabase.auth.signUp(
-        email: email.toLowerCase(),
-        password: password,
-      );
-
-      if (authResponse.user == null) {
-        throw Exception('Error creando usuario en Auth');
-      }
-
-      final authUser = authResponse.user!;
-      print('✅ Usuario creado en Auth: ${authUser.id}');
-
-      // 2. Crear perfil en tabla users (referencia a auth.users)
+      // Generar ID único para el usuario
+      final userId = _generateUserId();
+      final hashedPassword = _hashPassword(password);
+      
+      // Crear perfil directamente en tabla users
       await _supabase.from('users').insert({
-        'id': authUser.id, // Usar el ID de auth.users
+        'id': userId,
         'email': email.toLowerCase(),
+        'password_hash': hashedPassword,
         'full_name': fullName,
         'role': role.name,
         'phone': phone,
@@ -76,12 +68,12 @@ class AuthService {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      print('✅ Perfil creado en tabla users: $email');
+      print('✅ Usuario creado directamente en tabla users: $email');
 
       return {
         'success': true,
         'user': {
-          'id': authUser.id,
+          'id': userId,
           'email': email,
           'full_name': fullName,
           'role': role.name,
@@ -89,51 +81,39 @@ class AuthService {
       };
     } catch (e) {
       print('❌ Error en registro: $e');
-      
-      // Si falló la creación del perfil pero el usuario auth existe, limpiarlo
-      if (currentUser != null) {
-        try {
-          await _supabase.auth.signOut();
-        } catch (_) {}
-      }
-      
       throw Exception('Error al crear la cuenta: $e');
     }
   }
 
-  // Inicio de sesión usando Supabase Auth
+  // Inicio de sesión usando solo tabla users (sin Supabase Auth)
   Future<Map<String, dynamic>> signIn({
     required String email,
     required String password,
   }) async {
     try {
-      print('🔄 Iniciando sesión con Supabase Auth...');
+      print('🔄 Iniciando sesión con verificación directa...');
       
-      // 1. Autenticar con Supabase Auth
-      final authResponse = await _supabase.auth.signInWithPassword(
-        email: email.toLowerCase(),
-        password: password,
-      );
-
-      if (authResponse.user == null) {
-        throw Exception('Email o contraseña incorrectos');
-      }
-
-      final authUser = authResponse.user!;
-      print('✅ Usuario autenticado: ${authUser.id}');
-
-      // 2. Obtener perfil de tabla users
+      // 1. Buscar usuario en tabla users
       final userProfile = await _supabase
           .from('users')
           .select('*')
-          .eq('id', authUser.id)
+          .eq('email', email.toLowerCase())
           .maybeSingle();
 
       if (userProfile == null) {
-        throw Exception('Perfil de usuario no encontrado');
+        throw Exception('Email o contraseña incorrectos');
       }
 
-      print('✅ Perfil cargado: ${userProfile['full_name']}');
+      // 2. Verificar contraseña
+      final hashedPassword = _hashPassword(password);
+      if (userProfile['password_hash'] != hashedPassword) {
+        throw Exception('Email o contraseña incorrectos');
+      }
+
+      print('✅ Usuario autenticado: ${userProfile['full_name']}');
+
+      // Almacenar usuario actual
+      _currentUserData = userProfile;
 
       return {
         'success': true,
@@ -148,18 +128,18 @@ class AuthService {
 
   // Cerrar sesión
   Future<void> signOut() async {
-    await _supabase.auth.signOut();
+    _currentUserData = null;
   }
 
-  // Recuperar contraseña
+  // Recuperar contraseña (deshabilitado - requiere email auth)
   Future<void> resetPassword(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    throw Exception('Recuperación de contraseña no disponible sin autenticación por email');
   }
 
 
   // Obtener perfil de usuario con mejor manejo de errores
   Future<UserProfile?> getUserProfile([String? userId]) async {
-    final id = userId ?? currentUser?.id;
+    final id = userId ?? currentUser?['id'];
     if (id == null) return null;
 
     try {
@@ -189,7 +169,7 @@ class AuthService {
     await _supabase
         .from('users')
         .update(updates)
-        .eq('id', currentUser!.id);
+        .eq('id', currentUser!['id']);
   }
 
   // Actualizar foto de perfil
@@ -202,7 +182,7 @@ class AuthService {
       
       // Subir nueva foto
       final newPhotoUrl = await _storageService.uploadProfilePhoto(
-        currentUser!.id, 
+        currentUser!['id'], 
         imageFile
       );
       
@@ -249,6 +229,19 @@ class AuthService {
       print('Error en removeProfilePhoto: $e');
       return false;
     }
+  }
+
+  // Helper methods for user ID generation and password hashing
+  String _generateUserId() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(999999);
+    return 'user_${timestamp}_$random';
+  }
+
+  String _hashPassword(String password) {
+    final bytes = utf8.encode('${password}puente_humano_salt');
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
 }

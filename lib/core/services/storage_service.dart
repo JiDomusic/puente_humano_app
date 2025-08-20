@@ -10,7 +10,7 @@ class StorageService {
   Future<String?> uploadProfilePhoto(String userId, File imageFile) async {
     try {
       // Generar nombre único para la imagen
-      final uuid = const Uuid();
+      const uuid = Uuid();
       final fileName = '${userId}_${uuid.v4()}.jpg';
       final filePath = '$userId/$fileName';
 

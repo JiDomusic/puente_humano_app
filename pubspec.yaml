@@ -50,10 +50,12 @@ dependencies:
   intl: ^0.20.2
   uuid: ^4.1.0
 
+  crypto: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
 
+  supabase: any
 flutter:
   uses-material-design: true

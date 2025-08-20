@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider_simple.dart';
 import '../../core/models/user_profile.dart';
 
 /// 📚 PuenteHumano Home Screen
@@ -20,14 +20,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
+    return Consumer<SimpleAuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
+        final isLoading = authProvider.isLoading;
+        
+        if (isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
         
         if (user == null) {
           return const Scaffold(
             body: Center(
-              child: CircularProgressIndicator(),
+              child: Text('Usuario no encontrado'),
             ),
           );
         }
@@ -41,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xE6D282),
       appBar: AppBar(
         title: Text(
           'Hola, ${user.fullName.split(' ').first}!',

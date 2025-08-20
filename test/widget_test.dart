@@ -13,7 +13,8 @@ import 'package:puente_humano/main.dart';
 void main() {
   testWidgets('App loads without error', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PuenteHumanoApp());
+    final supabaseInit = Future<void>.value();
+    await tester.pumpWidget(PuenteHumanoApp(supabaseInit: supabaseInit));
 
     // Verify that the app builds successfully
     expect(find.byType(MaterialApp), findsOneWidget);
