@@ -96,7 +96,7 @@ class StorageService {
           const BucketOptions(
             public: true,
             allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-            fileSizeLimit: '5MB',
+            fileSizeLimit: '20MB',
           ),
         );
         print('✅ Bucket creado exitosamente: $_avatarsBucket');
