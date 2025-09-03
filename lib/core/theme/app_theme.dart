@@ -25,7 +25,13 @@ class AppTheme {
       error: errorColor,
     ),
     scaffoldBackgroundColor: const Color(0xE6D282),
-    textTheme: GoogleFonts.poppinsTextTheme(
+    // Configuraciones para mejor scroll y touch en móvil
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    // Mejoras para el toque en pantalla
+    splashFactory: InkRipple.splashFactory,
+    // Configuración para evitar problemas de fuentes en web
+    fontFamilyFallback: const ['Roboto', 'Arial', 'sans-serif'],
+    textTheme: GoogleFonts.robotoTextTheme(
       const TextTheme(
         displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
         displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),

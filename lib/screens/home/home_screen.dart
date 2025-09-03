@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
     
     return Scaffold(
-      backgroundColor: const Color(0xE6D282),
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(
           'Hola, ${user.fullName.split(' ').first}!',
@@ -106,6 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 // Actividad reciente
                 _buildRecentActivity(user, isMobile),
+                SizedBox(height: isMobile ? 16 : 24),
+                
+                // Viajes, donaciones y bibliotecas activos
+                _buildCommunityContent(isMobile),
                 SizedBox(height: isMobile ? 16 : 24),
                 
                 // Información del ecosistema
@@ -942,5 +946,116 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ];
     }
+  }
+
+  Widget _buildCommunityContent(bool isMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Actividades de la Comunidad',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: isMobile ? 18 : 22,
+          ),
+        ),
+        SizedBox(height: isMobile ? 12 : 16),
+        
+        // Viajes Activos
+        _buildSectionCard(
+          'Viajes Disponibles',
+          'Transportistas listos para llevar libros',
+          Icons.local_shipping,
+          Colors.green[600]!,
+          () => context.push('/trips'),
+          isMobile,
+        ),
+        
+        SizedBox(height: isMobile ? 12 : 16),
+        
+        // Donaciones Activas
+        _buildSectionCard(
+          'Donaciones Disponibles',
+          'Libros esperando ser transportados',
+          Icons.volunteer_activism,
+          Colors.blue[600]!,
+          () => context.push('/donations'),
+          isMobile,
+        ),
+        
+        SizedBox(height: isMobile ? 12 : 16),
+        
+        // Bibliotecas Activas
+        _buildSectionCard(
+          'Bibliotecas Activas',
+          'Centros comunitarios que necesitan libros',
+          Icons.library_books,
+          Colors.purple[600]!,
+          () => context.push('/users?role=biblioteca'),
+          isMobile,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard(String title, String subtitle, IconData icon, Color color, VoidCallback onTap, bool isMobile) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 16 : 20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: isMobile ? 24 : 28,
+                ),
+              ),
+              SizedBox(width: isMobile ? 12 : 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: isMobile ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: isMobile ? 12 : 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: color,
+                size: isMobile ? 16 : 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

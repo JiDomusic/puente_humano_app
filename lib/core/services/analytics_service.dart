@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AnalyticsService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  bool _tablesExist = true; // Flag para evitar logs repetitivos
   
   // Log de acciones de usuarios
   Future<void> logUserAction({
@@ -9,6 +10,8 @@ class AnalyticsService {
     required String userId,
     Map<String, dynamic>? details,
   }) async {
+    if (!_tablesExist) return; // Skip si ya sabemos que no existen las tablas
+    
     try {
       await _supabase.from('user_logs').insert({
         'user_id': userId,
@@ -18,7 +21,12 @@ class AnalyticsService {
         'ip_address': 'web', // En web no se puede obtener IP fácilmente
       });
     } catch (e) {
-      print('Error logging user action: $e');
+      if (e.toString().contains('PGRST205') || e.toString().contains('404')) {
+        _tablesExist = false;
+        // Silenciar mensaje para producción - las tablas de analytics son opcionales
+      } else {
+        print('Error logging user action: $e');
+      }
     }
   }
   
@@ -29,6 +37,8 @@ class AnalyticsService {
     String? userId,
     Map<String, dynamic>? details,
   }) async {
+    if (!_tablesExist) return; // Skip si ya sabemos que no existen las tablas
+    
     try {
       await _supabase.from('error_logs').insert({
         'user_id': userId,
@@ -38,7 +48,12 @@ class AnalyticsService {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('Error logging error: $e');
+      if (e.toString().contains('PGRST205') || e.toString().contains('404')) {
+        _tablesExist = false;
+        // Silenciar mensaje para producción - las tablas de analytics son opcionales
+      } else {
+        print('Error logging error: $e');
+      }
     }
   }
   

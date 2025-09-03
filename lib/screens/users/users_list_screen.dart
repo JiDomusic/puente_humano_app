@@ -8,7 +8,12 @@ import '../../widgets/star_rating.dart';
 import '../../utils/app_localizations.dart';
 
 class UsersListScreen extends StatefulWidget {
-  const UsersListScreen({super.key});
+  final String? roleFilter;
+  
+  const UsersListScreen({
+    super.key,
+    this.roleFilter,
+  });
 
   @override
   State<UsersListScreen> createState() => _UsersListScreenState();
@@ -92,10 +97,26 @@ class _UsersListScreenState extends State<UsersListScreen> {
     final isMobile = MediaQuery.of(context).size.width < 600;
     final l10n = AppLocalizations.of(context);
     
+    // Determinar el título basado en el filtro de rol
+    String title = l10n.usersList;
+    if (widget.roleFilter != null) {
+      switch (widget.roleFilter) {
+        case 'donante':
+          title = 'Donantes';
+          break;
+        case 'transportista':
+          title = 'Transportistas';
+          break;
+        case 'biblioteca':
+          title = 'Bibliotecas';
+          break;
+      }
+    }
+    
     return Scaffold(
       backgroundColor: const Color(0xE6D282),
       appBar: AppBar(
-        title: Text(l10n.usersList),
+        title: Text(title),
         backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
         elevation: 0,
@@ -180,38 +201,80 @@ class _UsersListScreenState extends State<UsersListScreen> {
                     onRefresh: _loadUsers,
                     child: ListView(
                       padding: EdgeInsets.all(isMobile ? 12 : 16),
-                      children: [
-                        _buildRoleSection(
-                          'Donantes',
-                          _filterAndSortUsers(_donantes),
-                          Colors.blue[600]!,
-                          Icons.volunteer_activism,
-                          isMobile,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildRoleSection(
-                          'Transportistas',
-                          _filterAndSortUsers(_transportistas),
-                          Colors.green[600]!,
-                          Icons.local_shipping,
-                          isMobile,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildRoleSection(
-                          'Bibliotecas',
-                          _filterAndSortUsers(_bibliotecas),
-                          Colors.purple[600]!,
-                          Icons.library_books,
-                          isMobile,
-                        ),
-                        const SizedBox(height: 100),
-                      ],
+                      children: _buildUserSections(isMobile),
                     ),
                   ),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildUserSections(bool isMobile) {
+    List<Widget> sections = [];
+    
+    // Si hay filtro de rol, mostrar solo esa sección
+    if (widget.roleFilter != null) {
+      switch (widget.roleFilter) {
+        case 'donante':
+          sections.add(_buildRoleSection(
+            'Donantes',
+            _filterAndSortUsers(_donantes),
+            Colors.blue[600]!,
+            Icons.volunteer_activism,
+            isMobile,
+          ));
+          break;
+        case 'transportista':
+          sections.add(_buildRoleSection(
+            'Transportistas',
+            _filterAndSortUsers(_transportistas),
+            Colors.green[600]!,
+            Icons.local_shipping,
+            isMobile,
+          ));
+          break;
+        case 'biblioteca':
+          sections.add(_buildRoleSection(
+            'Bibliotecas',
+            _filterAndSortUsers(_bibliotecas),
+            Colors.purple[600]!,
+            Icons.library_books,
+            isMobile,
+          ));
+          break;
+      }
+    } else {
+      // Mostrar todas las secciones
+      sections.addAll([
+        _buildRoleSection(
+          'Donantes',
+          _filterAndSortUsers(_donantes),
+          Colors.blue[600]!,
+          Icons.volunteer_activism,
+          isMobile,
+        ),
+        const SizedBox(height: 24),
+        _buildRoleSection(
+          'Transportistas',
+          _filterAndSortUsers(_transportistas),
+          Colors.green[600]!,
+          Icons.local_shipping,
+          isMobile,
+        ),
+        const SizedBox(height: 24),
+        _buildRoleSection(
+          'Bibliotecas',
+          _filterAndSortUsers(_bibliotecas),
+          Colors.purple[600]!,
+          Icons.library_books,
+          isMobile,
+        ),
+      ]);
+    }
+    
+    sections.add(const SizedBox(height: 100));
+    return sections;
   }
 
   Widget _buildRoleSection(String title, List<UserProfile> users, Color color, IconData icon, bool isMobile) {
@@ -331,12 +394,26 @@ class _UsersListScreenState extends State<UsersListScreen> {
           ),
         ],
       ),
-      trailing: Icon(
-        Icons.arrow_forward_ios,
-        color: Colors.grey[400],
-        size: isMobile ? 16 : 18,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.chat,
+              color: Colors.indigo[600],
+              size: isMobile ? 18 : 20,
+            ),
+            onPressed: () => context.go('/chat/${user.id}'),
+            tooltip: 'Enviar mensaje',
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.grey[400],
+            size: isMobile ? 16 : 18,
+          ),
+        ],
       ),
-      onTap: () => context.push('/profile/public/${user.id}'),
+      onTap: () => context.push('/user/${user.id}'),
     );
   }
 
@@ -359,7 +436,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
                 final authProvider = Provider.of<SimpleAuthProvider>(context, listen: false);
                 await authProvider.signOut();
                 if (mounted) {
-                  context.go('/login');
+                  context.go('/');
                 }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),

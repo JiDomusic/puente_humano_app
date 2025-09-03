@@ -788,7 +788,7 @@ class _LibraryDashboardScreenState extends State<LibraryDashboardScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               context.read<SimpleAuthProvider>().signOut();
-              context.go('/login');
+              context.go('/');
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Cerrar Sesión'),

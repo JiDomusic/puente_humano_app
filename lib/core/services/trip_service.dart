@@ -4,8 +4,24 @@ import '../models/trip.dart';
 class TripService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Crear nuevo viaje
-  Future<Trip> createTrip({
+  // Crear nuevo viaje (método simplificado)
+  Future<bool> createTrip(Trip trip) async {
+    try {
+      // Generar código único para el viaje
+      final tripCode = await _generateTripCode();
+      
+      final tripData = trip.toJson();
+      tripData['trip_code'] = tripCode;
+      
+      await _supabase.from('trips').insert(tripData);
+      return true;
+    } catch (e) {
+      throw Exception('Error al crear viaje: $e');
+    }
+  }
+
+  // Crear nuevo viaje (método completo)
+  Future<Trip> createTripDetailed({
     required String travelerId,
     required String originCity,
     required String originCountry,
@@ -55,6 +71,23 @@ class TripService {
     }
   }
 
+  // Obtener todos los viajes
+  Future<List<Trip>> getAllTrips() async {
+    try {
+      final response = await _supabase
+          .from('trips')
+          .select('''
+            *,
+            traveler:users(*)
+          ''')
+          .order('created_at', ascending: false);
+
+      return response.map((data) => Trip.fromJson(data)).toList();
+    } catch (e) {
+      throw Exception('Error obteniendo viajes: $e');
+    }
+  }
+
   // Obtener viajes del usuario
   Future<List<Trip>> getUserTrips(String userId) async {
     try {
@@ -62,7 +95,7 @@ class TripService {
           .from('trips')
           .select('''
             *,
-            traveler:users!traveler_id(*)
+            traveler:users(*)
           ''')
           .eq('traveler_id', userId)
           .order('depart_date', ascending: false);
@@ -86,7 +119,7 @@ class TripService {
           .from('trips')
           .select('''
             *,
-            traveler:users!traveler_id(*)
+            traveler:users(*)
           ''')
           .eq('status', 'activo')
           .gte('depart_date', DateTime.now().toIso8601String().split('T')[0]);
@@ -153,7 +186,7 @@ class TripService {
           .from('trips')
           .select('''
             *,
-            traveler:users!traveler_id(*)
+            traveler:users(*)
           ''')
           .eq('id', tripId)
           .maybeSingle();
@@ -210,7 +243,7 @@ class TripService {
           .from('trips')
           .select('''
             *,
-            traveler:users!traveler_id(*)
+            traveler:users(*)
           ''')
           .eq('status', 'activo')
           .ilike('origin_city', '%$originCity%')

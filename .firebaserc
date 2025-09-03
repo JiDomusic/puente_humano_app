@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "puentehumanolibros"
-  }
+    "default": "puentehumanolibros",
+    "puente-humano": "biblio-me-walsh-f71b9"
+  },
+  "targets": {},
+  "etags": {}
 }

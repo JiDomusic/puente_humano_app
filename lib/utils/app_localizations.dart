@@ -84,6 +84,8 @@ class AppLocalizations {
   String get myInventory => _localizedStrings['myInventory']!;
   String get receivedDonations => _localizedStrings['receivedDonations']!;
   String get routeMap => _localizedStrings['routeMap']!;
+  String get trips => _localizedStrings['trips']!;
+  String get donations => _localizedStrings['donations']!;
   
   // Notificaciones
   String get notifications => _localizedStrings['notifications']!;
@@ -160,6 +162,8 @@ class AppLocalizations {
       'myInventory': 'Mi Inventario',
       'receivedDonations': 'Donaciones Recibidas',
       'routeMap': 'Mapa de Rutas',
+      'trips': 'Viajes',
+      'donations': 'Donaciones',
       'notifications': 'Notificaciones',
       'noNotifications': 'No tienes notificaciones',
       'markAsRead': 'Marcar como leída',
@@ -232,6 +236,8 @@ class AppLocalizations {
       'myInventory': 'My Inventory',
       'receivedDonations': 'Received Donations',
       'routeMap': 'Route Map',
+      'trips': 'Trips',
+      'donations': 'Donations',
       'notifications': 'Notifications',
       'noNotifications': 'You have no notifications',
       'markAsRead': 'Mark as read',

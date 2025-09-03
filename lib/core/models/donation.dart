@@ -43,7 +43,9 @@ class Donation {
       targetLibraryId: json['target_library_id'] as String,
       notes: json['notes'] as String?,
       status: json['status'] as String,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       donor: json['donor'] != null 
           ? UserProfile.fromJson(json['donor'])
           : null,

@@ -23,7 +23,9 @@ import '../../screens/libraries/library_detail_screen.dart';
 import '../../screens/maps/map_screen.dart';
 import '../../screens/admin/admin_dashboard_screen.dart';
 import '../../screens/profile/public_profile_screen.dart';
-import '../../screens/test_registration_screen.dart';
+import '../../screens/users/users_list_screen.dart';
+import '../../screens/chat/chat_screen.dart';
+import '../../screens/trips/create_trip_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -40,7 +42,7 @@ class AppRouter {
       if (isLoading) return null;
 
       // Rutas públicas (no requieren autenticación)
-      final publicRoutes = ['/', '/login', '/register', '/admin-login', '/test'];
+      final publicRoutes = ['/', '/login', '/register', '/admin-login'];
       final isPublicRoute = publicRoutes.contains(state.fullPath);
 
       // Si no está logueado y trata de acceder a ruta privada
@@ -92,13 +94,6 @@ class AppRouter {
         builder: (context, state) => const AdminLoginScreen(),
       ),
 
-      // Pantalla de test (temporal para debugging)
-      GoRoute(
-        path: '/test',
-        name: 'test',
-        builder: (context, state) => const TestRegistrationScreen(),
-      ),
-
       // Ruta principal (home)
       GoRoute(
         path: '/home',
@@ -136,6 +131,25 @@ class AppRouter {
         name: 'public-profile',
         builder: (context, state) => PublicProfileScreen(
           userId: state.pathParameters['userId']!,
+        ),
+      ),
+
+      // Lista de usuarios
+      GoRoute(
+        path: '/users',
+        name: 'users',
+        builder: (context, state) {
+          final role = state.uri.queryParameters['role'];
+          return UsersListScreen(roleFilter: role);
+        },
+      ),
+
+      // Chat
+      GoRoute(
+        path: '/chat/:userId',
+        name: 'chat',
+        builder: (context, state) => ChatScreen(
+          otherUserId: state.pathParameters['userId']!,
         ),
       ),
 
@@ -241,12 +255,7 @@ class AppRouter {
       GoRoute(
         path: '/trips/create',
         name: 'trips-create',
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('Crear Viaje')),
-          body: const Center(
-            child: Text('Crear viaje - En desarrollo'),
-          ),
-        ),
+        builder: (context, state) => const CreateTripScreen(),
       ),
       GoRoute(
         path: '/requests/create',

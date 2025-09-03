@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider_simple.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../core/services/storage_service.dart';
 import '../../core/models/user_profile.dart';
 import '../../utils/app_localizations.dart';
 import '../../widgets/language_toggle_button.dart';
@@ -20,28 +19,76 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
-  final StorageService _storageService = StorageService();
 
   Future<void> _changeProfilePhoto() async {
     try {
+      // Mostrar opciones para seleccionar imagen
+      final ImageSource? source = await _showImageSourceDialog();
+      if (source == null) return;
+      
       final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
       );
       
       if (image != null) {
-        final authProvider = context.read<SimpleAuthProvider>();
-        final user = authProvider.currentUser;
+        // Verificar el tipo de archivo
+        final extension = image.path.split('.').last.toLowerCase();
+        if (!['jpg', 'jpeg', 'png', 'webp'].contains(extension)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Solo se permiten archivos JPG, PNG y WebP'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
         
-        // Usar el mismo método que ProfileEditScreen
-        final success = await authProvider.updateProfilePhoto(File(image.path));
+        // Verificar el tamaño del archivo
+        final File imageFile = File(image.path);
+        final fileSize = await imageFile.length();
+        if (fileSize > 10 * 1024 * 1024) { // 10MB límite
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ El archivo es demasiado grande (máximo 10MB)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        
+        final authProvider = context.read<SimpleAuthProvider>();
+        
+        // Mostrar indicador de carga
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 16),
+                Text('📤 Subiendo imagen...'),
+              ],
+            ),
+            duration: Duration(seconds: 10),
+            backgroundColor: Colors.blue,
+          ),
+        );
+        
+        final success = await authProvider.updateProfilePhoto(imageFile);
+        
+        // Quitar el indicador de carga
+        ScaffoldMessenger.of(context).clearSnackBars();
         
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Foto de perfil actualizada'),
+              content: Text('✅ Foto de perfil actualizada correctamente'),
               backgroundColor: Colors.green,
             ),
           );
@@ -49,7 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                authProvider.error ?? 'Error al subir la foto'
+                '❌ ${authProvider.error ?? 'Error al subir la foto'}'
               ),
               backgroundColor: Colors.red,
             ),
@@ -57,13 +104,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error actualizando foto: $e'),
+          content: Text('❌ Error actualizando foto: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+
+  Future<ImageSource?> _showImageSourceDialog() async {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Seleccionar imagen'),
+          content: const Text('¿De dónde quieres seleccionar la imagen?'),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Galería'),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Cámara'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -139,8 +215,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     '${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}'),
                 ]),
                 const SizedBox(height: 24),
+                // Botón para ir al Home General
+                _buildHomeNavigationSection(context),
+                const SizedBox(height: 24),
                 // Panel de administración (solo para administradores)
                 _buildAdminSection(context, user),
+                const SizedBox(height: 24),
+                // Botón de cerrar sesión
+                _buildLogoutSection(context),
               ],
             ),
           );
@@ -303,6 +385,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Widget _buildHomeNavigationSection(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Navegación',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepOrange,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Explora toda la comunidad de PuenteHumano',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/home'),
+                icon: const Icon(Icons.home),
+                label: const Text('Ver Comunidad General'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAdminSection(BuildContext context, UserProfile user) {
     // Solo mostrar para administradores autorizados
     final isAdmin = context.watch<SimpleAuthProvider>().isAdmin;
@@ -351,6 +477,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLogoutSection(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sesión',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Cerrar sesión y volver a la pantalla de inicio',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _showLogoutConfirmation(context),
+                icon: const Icon(Icons.logout),
+                label: const Text('Cerrar Sesión'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cerrar Sesión'),
+          content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<SimpleAuthProvider>().signOut();
+                context.go('/');
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Cerrar Sesión'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

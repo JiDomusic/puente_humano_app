@@ -20,22 +20,60 @@ class StorageService {
       final fileSize = await imageFile.length();
       print('📁 Tamaño del archivo: ${fileSize} bytes');
       
-      // Asegurar que el bucket existe
-      await createAvatarsBucketIfNotExists();
+      // Verificar límite de tamaño (20MB)
+      if (fileSize > 20 * 1024 * 1024) {
+        print('❌ Archivo demasiado grande: ${fileSize} bytes');
+        return null;
+      }
       
-      // Generar nombre único para la imagen
+      // Obtener la extensión del archivo original
+      final originalPath = imageFile.path;
+      final extension = originalPath.split('.').last.toLowerCase();
+      
+      // Validar tipo de archivo
+      if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension)) {
+        print('❌ Tipo de archivo no soportado: $extension');
+        return null;
+      }
+      
+      // Generar nombre único para la imagen conservando la extensión
       const uuid = Uuid();
-      final fileName = '${userId}_${uuid.v4()}.jpg';
+      final fileName = '${userId}_${uuid.v4()}.$extension';
       final filePath = '$userId/$fileName';
       
       print('📤 Subiendo archivo: $filePath');
 
       // Subir archivo a Supabase Storage
-      final response = await _supabase.storage
-          .from(_avatarsBucket)
-          .upload(filePath, imageFile);
-      
-      print('✅ Archivo subido exitosamente');
+      try {
+        await _supabase.storage
+            .from(_avatarsBucket)
+            .upload(filePath, imageFile);
+        
+        print('✅ Archivo subido exitosamente');
+      } catch (uploadError) {
+        print('❌ Error específico de upload: $uploadError');
+        if (uploadError is StorageException) {
+          if (uploadError.statusCode == '409') {
+            // Archivo ya existe, intentar con otro nombre
+            print('🔄 Archivo existe, intentando con nuevo nombre...');
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final newFileName = '${userId}_${uuid.v4()}_$timestamp.$extension';
+            final newFilePath = '$userId/$newFileName';
+            
+            await _supabase.storage
+                .from(_avatarsBucket)
+                .upload(newFilePath, imageFile);
+            
+            final publicUrl = _supabase.storage
+                .from(_avatarsBucket)
+                .getPublicUrl(newFilePath);
+            
+            print('🔗 URL pública generada: $publicUrl');
+            return publicUrl;
+          }
+        }
+        rethrow;
+      }
 
       // Obtener URL pública
       final String publicUrl = _supabase.storage
@@ -51,6 +89,13 @@ class StorageService {
       if (e is StorageException) {
         print('❌ Código de error Storage: ${e.statusCode}');
         print('❌ Mensaje de error Storage: ${e.message}');
+        
+        // Dar mensajes de error más específicos
+        if (e.statusCode == '403') {
+          print('❌ Permisos insuficientes - verificar políticas RLS');
+        } else if (e.statusCode == '404') {
+          print('❌ Bucket no encontrado');
+        }
       }
       return null;
     }
@@ -79,37 +124,23 @@ class StorageService {
     }
   }
 
-  // Crear bucket si no existe
-  Future<void> createAvatarsBucketIfNotExists() async {
+  // Verificar si el bucket existe (solo verificación, no creación)
+  Future<bool> bucketExists() async {
     try {
       print('🔍 Verificando existencia del bucket: $_avatarsBucket');
       
-      // Intentar obtener la lista de buckets primero
-      final buckets = await _supabase.storage.listBuckets();
-      final bucketExists = buckets.any((bucket) => bucket.name == _avatarsBucket);
+      // Intentar listar archivos del bucket como test
+      await _supabase.storage.from(_avatarsBucket).list();
       
-      if (!bucketExists) {
-        print('📦 Bucket no existe, creando: $_avatarsBucket');
-        // Solo crear si no existe
-        await _supabase.storage.createBucket(
-          _avatarsBucket,
-          const BucketOptions(
-            public: true,
-            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-            fileSizeLimit: '20MB',
-          ),
-        );
-        print('✅ Bucket creado exitosamente: $_avatarsBucket');
-      } else {
-        print('✅ Bucket ya existe: $_avatarsBucket');
-      }
+      print('✅ Bucket existe y es accesible: $_avatarsBucket');
+      return true;
     } catch (e) {
-      print('❌ Error al crear/verificar bucket: $e');
+      print('❌ Bucket no accesible: $e');
       if (e is StorageException) {
-        print('❌ Código de error bucket: ${e.statusCode}');
-        print('❌ Mensaje de error bucket: ${e.message}');
+        print('❌ Código de error: ${e.statusCode}');
+        print('❌ Mensaje: ${e.message}');
       }
-      rethrow; // Re-lanzar para que el upload sepa que falló
+      return false;
     }
   }
 }

@@ -1,12 +1,12 @@
 {
-    "name": "puente_humano",
-    "short_name": "puente_humano",
+    "name": "PuenteHumano - Libros para Todos",
+    "short_name": "PuenteHumano",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "description": "Un puente humano para que los libros lleguen a donde más se necesitan",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

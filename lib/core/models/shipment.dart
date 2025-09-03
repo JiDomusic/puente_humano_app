@@ -65,7 +65,9 @@ class Shipment {
       deliveredAt: json['delivered_at'] != null 
           ? DateTime.parse(json['delivered_at'])
           : null,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       donation: json['donation'] != null 
           ? Donation.fromJson(json['donation'])
           : null,

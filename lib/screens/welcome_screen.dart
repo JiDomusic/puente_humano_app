@@ -86,7 +86,7 @@ class WelcomeScreen extends StatelessWidget {
                         constraints: BoxConstraints(maxWidth: isWide ? 800 : double.infinity),
                         padding: EdgeInsets.all(isWide ? 32 : 24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8C807).withOpacity(0.8),
+                          color: Colors.black.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.2),

@@ -46,7 +46,9 @@ class Library {
       needs: json['needs'] as String?,
       receivedCount: json['received_count'] ?? 0,
       about: json['about'] as String?,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 

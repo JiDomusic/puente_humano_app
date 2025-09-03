@@ -61,7 +61,9 @@ class UserProfile {
       photo: json['photo'] as String?,
       averageRating: json['average_rating']?.toDouble(),
       ratingsCount: json['ratings_count'] ?? 0,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 

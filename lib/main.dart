@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,19 +18,40 @@ import 'providers/language_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializar Supabase en paralelo con la construcción del widget
-  final supabaseInit = Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
-  );
+  // Configurar orientación preferida y barras de sistema
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   
-  runApp(PuenteHumanoApp(supabaseInit: supabaseInit));
+  // Configurar UI overlay style para mejor apariencia
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+  
+  try {
+    // Inicializar Supabase con configuración más robusta
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      anonKey: AppConfig.supabaseAnonKey,
+      debug: false, // Desactivar debug completamente
+    );
+    
+    runApp(const PuenteHumanoApp());
+  } catch (e) {
+    print('Error initializing Supabase: $e');
+    // Continuar sin Supabase si falla
+    runApp(const PuenteHumanoApp());
+  }
 }
 
 class PuenteHumanoApp extends StatelessWidget {
-  final Future<void> supabaseInit;
-  
-  const PuenteHumanoApp({super.key, required this.supabaseInit});
+  const PuenteHumanoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +80,11 @@ class _AppInitializerState extends State<AppInitializer> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SimpleAuthProvider>().loadSession();
+      try {
+        context.read<SimpleAuthProvider>().loadSession();
+      } catch (e) {
+        print('Error loading session: $e');
+      }
     });
   }
 

@@ -158,6 +158,11 @@ class SimpleAuthProvider extends ChangeNotifier {
 
   // CARGAR USUARIO POR ID
   Future<void> _loadUserById(String userId) async {
+    if (userId.isEmpty) {
+      print('❌ userId is empty, cannot load user');
+      return;
+    }
+    
     try {
       final userProfile = await _supabase
           .from('users')
@@ -165,12 +170,18 @@ class SimpleAuthProvider extends ChangeNotifier {
           .eq('id', userId)
           .single();
       
-      _currentUser = UserProfile.fromJson(userProfile);
-      
-      // IMPORTANTE: Sincronizar con AuthService
-      _authService.setCurrentUserData(userProfile);
-      
-      print('✅ Perfil cargado: ${_currentUser!.fullName}');
+      if (userProfile != null && userProfile.isNotEmpty) {
+        _currentUser = UserProfile.fromJson(userProfile);
+        
+        // IMPORTANTE: Sincronizar con AuthService
+        _authService.setCurrentUserData(userProfile);
+        
+        print('✅ Perfil cargado: ${_currentUser!.fullName}');
+      } else {
+        print('❌ Perfil vacío o nulo para userId: $userId');
+        _currentUser = null;
+        _authService.setCurrentUserData(null);
+      }
     } catch (e) {
       print('❌ Error cargando perfil: $e');
       _currentUser = null;
@@ -203,9 +214,11 @@ class SimpleAuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
       
-      if (userId != null) {
+      if (userId != null && userId.isNotEmpty && userId.trim().isNotEmpty) {
         await _loadUserById(userId);
-        }
+      } else {
+        print('No hay sesión guardada o userId es inválido');
+      }
     } catch (e) {
       print('Error cargando sesión: $e');
     } finally {

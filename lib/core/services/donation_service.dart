@@ -41,6 +41,24 @@ class DonationService {
     }
   }
 
+  // Obtener todas las donaciones
+  Future<List<Donation>> getAllDonations() async {
+    try {
+      final response = await _supabase
+          .from('donations')
+          .select('''
+            *,
+            donor:users(*),
+            target_library:libraries(*)
+          ''')
+          .order('created_at', ascending: false);
+
+      return response.map((data) => Donation.fromJson(data)).toList();
+    } catch (e) {
+      throw Exception('Error obteniendo donaciones: $e');
+    }
+  }
+
   // Obtener donaciones del usuario
   Future<List<Donation>> getUserDonations(String userId) async {
     try {
@@ -48,8 +66,8 @@ class DonationService {
           .from('donations')
           .select('''
             *,
-            donor:users!donor_id(*),
-            target_library:libraries!target_library_id(*)
+            donor:users(*),
+            target_library:libraries(*)
           ''')
           .eq('donor_id', userId)
           .order('created_at', ascending: false);
@@ -71,8 +89,8 @@ class DonationService {
           .from('donations')
           .select('''
             *,
-            donor:users!donor_id(*),
-            target_library:libraries!target_library_id(*)
+            donor:users(*),
+            target_library:libraries(*)
           ''');
 
       if (status != null) {
@@ -115,8 +133,8 @@ class DonationService {
           .from('donations')
           .select('''
             *,
-            donor:users!donor_id(*),
-            target_library:libraries!target_library_id(*)
+            donor:users(*),
+            target_library:libraries(*)
           ''')
           .eq('id', donationId)
           .maybeSingle();

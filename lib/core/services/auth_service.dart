@@ -21,7 +21,7 @@ class AuthService {
   Future<void> _initializeStorageSilently() async {
     // Inicializar storage sin bloquear la app si falla
     try {
-      await _storageService.createAvatarsBucketIfNotExists();
+      await _storageService.bucketExists();
     } catch (e) {
       // Silenciar errores de storage para no afectar la funcionalidad principal
       print('Storage initialization failed silently: $e');
@@ -57,7 +57,7 @@ class AuthService {
       final hashedPassword = _hashPassword(password);
       
       // Crear perfil directamente en tabla users
-      await _supabase.from('users').insert({
+      final userData = <String, dynamic>{
         'id': userId,
         'email': email.toLowerCase(),
         'password_hash': hashedPassword,
@@ -66,12 +66,16 @@ class AuthService {
         'phone': phone,
         'city': city,
         'country': country,
-        'age': age,
-        'lat': lat,
-        'lng': lng,
         'language': 'es',
         'created_at': DateTime.now().toIso8601String(),
-      });
+      };
+      
+      // Solo añadir campos opcionales si no son null
+      if (age != null) userData['age'] = age;
+      if (lat != null) userData['lat'] = lat;
+      if (lng != null) userData['lng'] = lng;
+      
+      await _supabase.from('users').insert(userData);
 
       print('✅ Usuario creado directamente en tabla users: $email');
 
@@ -171,10 +175,20 @@ class AuthService {
   Future<void> updateProfile(Map<String, dynamic> updates) async {
     if (currentUser == null) throw Exception('Usuario no autenticado');
     
-    await _supabase
-        .from('users')
-        .update(updates)
-        .eq('id', currentUser!['id']);
+    // Filtrar valores null para evitar el error "Cannot send Null"
+    final filteredUpdates = <String, dynamic>{};
+    for (final entry in updates.entries) {
+      if (entry.value != null) {
+        filteredUpdates[entry.key] = entry.value;
+      }
+    }
+    
+    if (filteredUpdates.isNotEmpty) {
+      await _supabase
+          .from('users')
+          .update(filteredUpdates)
+          .eq('id', currentUser!['id']);
+    }
     
     // Actualizar el estado local _currentUserData
     _currentUserData = {
@@ -185,40 +199,72 @@ class AuthService {
 
   // Actualizar foto de perfil
   Future<String?> updateProfilePhoto(File imageFile) async {
-    if (currentUser == null) throw Exception('Usuario no autenticado');
+    if (currentUser == null) {
+      print('❌ Usuario no autenticado para upload');
+      return null;
+    }
     
     try {
-      // Obtener perfil actual para eliminar foto anterior si existe
-      final currentProfile = await getUserProfile();
+      print('🔄 Iniciando actualización de foto de perfil...');
+      
+      // Verificar si el archivo es válido
+      if (!await imageFile.exists()) {
+        print('❌ Archivo de imagen no existe');
+        return null;
+      }
+      
+      final userId = currentUser!['id'];
+      if (userId == null) {
+        print('❌ ID de usuario es null');
+        return null;
+      }
       
       // Subir nueva foto
+      print('📤 Subiendo nueva foto...');
       final newPhotoUrl = await _storageService.uploadProfilePhoto(
-        currentUser!['id'], 
+        userId.toString(), 
         imageFile
       );
       
-      if (newPhotoUrl != null) {
-        // Actualizar URL en la base de datos
-        await updateProfile({'photo': newPhotoUrl});
+      if (newPhotoUrl != null && newPhotoUrl.isNotEmpty) {
+        print('✅ Foto subida exitosamente: $newPhotoUrl');
         
-        // Actualizar el estado local _currentUserData
-        _currentUserData = {
-          ..._currentUserData!,
-          'photo': newPhotoUrl,
-        };
-        
-        // Eliminar foto anterior si existe
-        if (currentProfile?.photo != null) {
-          await _storageService.deleteProfilePhoto(currentProfile!.photo!);
+        try {
+          // Actualizar URL en la base de datos
+          await updateProfile({'photo': newPhotoUrl});
+          
+          // Actualizar el estado local _currentUserData
+          _currentUserData = {
+            ..._currentUserData!,
+            'photo': newPhotoUrl,
+          };
+          
+          print('✅ Perfil actualizado en BD');
+          
+          // Eliminar foto anterior si existe (pero no bloquear si falla)
+          try {
+            final currentProfile = await getUserProfile();
+            if (currentProfile?.photo != null && currentProfile!.photo!.isNotEmpty) {
+              await _storageService.deleteProfilePhoto(currentProfile.photo!);
+              print('🗑️ Foto anterior eliminada');
+            }
+          } catch (deleteError) {
+            print('⚠️ No se pudo eliminar foto anterior: $deleteError');
+            // No fallar por esto
+          }
+          
+          return newPhotoUrl;
+        } catch (dbError) {
+          print('❌ Error actualizando BD: $dbError');
+          return null;
         }
-        
-        return newPhotoUrl;
+      } else {
+        print('❌ Upload falló - URL es null o vacía');
+        return null;
       }
-      
-      return null;
     } catch (e) {
-      print('Error en updateProfilePhoto: $e');
-      // Devolver null en lugar de lanzar excepción
+      print('❌ Error general en updateProfilePhoto: $e');
+      print('❌ Tipo de error: ${e.runtimeType}');
       return null;
     }
   }

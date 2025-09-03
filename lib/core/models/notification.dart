@@ -45,7 +45,9 @@ class AppNotification {
       relatedId: json['related_id'] as String?,
       data: json['data'] as Map<String, dynamic>?,
       isRead: json['is_read'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
     );
   }
 

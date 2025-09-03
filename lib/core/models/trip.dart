@@ -64,7 +64,9 @@ class Trip {
       usedKg: (json['used_kg'] as num?)?.toDouble() ?? 0,
       notes: json['notes'] as String?,
       status: json['status'] as String,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       traveler: json['traveler'] != null 
           ? UserProfile.fromJson(json['traveler'])
           : null,
