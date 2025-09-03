@@ -466,6 +466,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
+                    onPressed: () => context.push('/rate-user/${widget.userId}'),
+                    icon: const Icon(Icons.star),
+                    label: const Text('Calificar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
                     onPressed: () => context.go('/chat/${widget.userId}'),
                     icon: const Icon(Icons.chat),
                     label: const Text('Chat'),
@@ -476,7 +489,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {

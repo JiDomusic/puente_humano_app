@@ -26,6 +26,7 @@ import '../../screens/profile/public_profile_screen.dart';
 import '../../screens/users/users_list_screen.dart';
 import '../../screens/chat/chat_screen.dart';
 import '../../screens/trips/create_trip_screen.dart';
+import '../../screens/rating/rate_user_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -142,6 +143,17 @@ class AppRouter {
           final role = state.uri.queryParameters['role'];
           return UsersListScreen(roleFilter: role);
         },
+      ),
+
+      // Calificar usuario
+      GoRoute(
+        path: '/rate-user/:userId',
+        name: 'rate-user',
+        builder: (context, state) => RateUserScreen(
+          userId: state.pathParameters['userId']!,
+          interactionType: state.uri.queryParameters['type'],
+          interactionId: state.uri.queryParameters['id'],
+        ),
       ),
 
       // Chat

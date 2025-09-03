@@ -46,12 +46,8 @@ class Donation {
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : DateTime.now(),
-      donor: json['donor'] != null 
-          ? UserProfile.fromJson(json['donor'])
-          : null,
-      targetLibrary: json['target_library'] != null 
-          ? Library.fromJson(json['target_library'])
-          : null,
+      donor: null, // No cargar relaciones por ahora
+      targetLibrary: null,
     );
   }
 

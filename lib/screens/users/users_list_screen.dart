@@ -399,6 +399,15 @@ class _UsersListScreenState extends State<UsersListScreen> {
         children: [
           IconButton(
             icon: Icon(
+              Icons.star,
+              color: Colors.amber[600],
+              size: isMobile ? 18 : 20,
+            ),
+            onPressed: () => context.push('/rate-user/${user.id}'),
+            tooltip: 'Calificar usuario',
+          ),
+          IconButton(
+            icon: Icon(
               Icons.chat,
               color: Colors.indigo[600],
               size: isMobile ? 18 : 20,

@@ -46,11 +46,7 @@ class DonationService {
     try {
       final response = await _supabase
           .from('donations')
-          .select('''
-            *,
-            donor:users(*),
-            target_library:libraries(*)
-          ''')
+          .select('*')
           .order('created_at', ascending: false);
 
       return response.map((data) => Donation.fromJson(data)).toList();
@@ -64,11 +60,7 @@ class DonationService {
     try {
       final response = await _supabase
           .from('donations')
-          .select('''
-            *,
-            donor:users(*),
-            target_library:libraries(*)
-          ''')
+          .select('*')
           .eq('donor_id', userId)
           .order('created_at', ascending: false);
 
@@ -87,11 +79,7 @@ class DonationService {
     try {
       var query = _supabase
           .from('donations')
-          .select('''
-            *,
-            donor:users(*),
-            target_library:libraries(*)
-          ''');
+          .select('*');
 
       if (status != null) {
         query = query.eq('status', status);
@@ -131,11 +119,7 @@ class DonationService {
     try {
       final response = await _supabase
           .from('donations')
-          .select('''
-            *,
-            donor:users(*),
-            target_library:libraries(*)
-          ''')
+          .select('*')
           .eq('id', donationId)
           .maybeSingle();
 

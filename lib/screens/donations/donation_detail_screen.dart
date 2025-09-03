@@ -265,8 +265,6 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
   }
 
   Widget _buildDonorInfoCard() {
-    final donor = _donation!.donor;
-    
     return Card(
       elevation: 2,
       child: Padding(
@@ -289,49 +287,42 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            if (donor != null) ...[
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.green[100],
-                    backgroundImage: donor.photo != null ? NetworkImage(donor.photo!) : null,
-                    child: donor.photo == null
-                        ? Icon(Icons.person, color: Colors.green[600])
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          donor.fullName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.green[100],
+                  child: Icon(Icons.person, color: Colors.green[600]),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ID: ${_donation!.donorId}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          '${donor.city}, ${donor.country}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
+                      ),
+                      Text(
+                        'Información completa próximamente',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.chat, color: Colors.indigo[600]),
-                    onPressed: () => context.go('/chat/${donor.id}'),
-                    tooltip: 'Enviar mensaje',
-                  ),
-                ],
-              ),
-            ] else ...[
-              const Text('Información del donante no disponible'),
-            ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.chat, color: Colors.indigo[600]),
+                  onPressed: () => context.go('/chat/${_donation!.donorId}'),
+                  tooltip: 'Enviar mensaje',
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -363,19 +354,15 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            if (library != null) ...[
-              _buildInfoRow('Nombre', library.name, Icons.library_books),
-              const SizedBox(height: 8),
-              _buildInfoRow('Ubicación', '${library.city}, ${library.country}', Icons.location_on),
-              const SizedBox(height: 8),
-              _buildInfoRow('Email', library.contactEmail, Icons.email),
-              if (library.contactPhone != null) ...[
-                const SizedBox(height: 8),
-                _buildInfoRow('Teléfono', library.contactPhone!, Icons.phone),
-              ],
-            ] else ...[
-              const Text('Información de biblioteca no disponible'),
-            ],
+            _buildInfoRow('ID Biblioteca', _donation!.targetLibraryId, Icons.library_books),
+            const SizedBox(height: 8),
+            Text(
+              'Información completa próximamente',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),

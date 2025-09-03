@@ -142,4 +142,97 @@ class UserService {
   double _toRadians(double degrees) {
     return degrees * (math.pi / 180);
   }
+
+  // Obtener usuario por ID
+  Future<UserProfile?> getUserById(String userId) async {
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+      return UserProfile.fromJson(response);
+    } catch (e) {
+      print('Error obteniendo usuario por ID: $e');
+      return null;
+    }
+  }
+
+  // Calificar usuario
+  Future<bool> rateUser({
+    required String ratedUserId,
+    required String raterUserId,
+    required double rating,
+    String? comment,
+    String? interactionType,
+    String? interactionId,
+  }) async {
+    try {
+      // Insertar o actualizar calificación
+      final ratingData = {
+        'rated_user_id': ratedUserId,
+        'rater_user_id': raterUserId,
+        'rating': rating,
+        'comment': comment,
+        'interaction_type': interactionType,
+        'interaction_id': interactionId,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      await _supabase
+          .from('user_ratings')
+          .upsert(ratingData, onConflict: 'rated_user_id,rater_user_id');
+
+      // Actualizar estadísticas del usuario calificado
+      await _updateUserRatingStats(ratedUserId);
+
+      return true;
+    } catch (e) {
+      print('Error calificando usuario: $e');
+      return false;
+    }
+  }
+
+  // Actualizar estadísticas de calificación
+  Future<void> _updateUserRatingStats(String userId) async {
+    try {
+      final response = await _supabase
+          .from('user_ratings')
+          .select('rating')
+          .eq('rated_user_id', userId);
+
+      if (response.isNotEmpty) {
+        final ratings = response.map<double>((r) => r['rating'].toDouble()).toList();
+        final averageRating = ratings.reduce((a, b) => a + b) / ratings.length;
+        final ratingsCount = ratings.length;
+
+        await _supabase
+            .from('users')
+            .update({
+              'average_rating': averageRating,
+              'ratings_count': ratingsCount,
+            })
+            .eq('id', userId);
+      }
+    } catch (e) {
+      print('Error actualizando estadísticas de calificación: $e');
+    }
+  }
+
+  // Obtener calificaciones de un usuario
+  Future<List<Map<String, dynamic>>> getUserRatings(String userId) async {
+    try {
+      final response = await _supabase
+          .from('user_ratings')
+          .select('*, rater:users!rater_user_id(full_name, photo)')
+          .eq('rated_user_id', userId)
+          .order('created_at', ascending: false);
+
+      return response.cast<Map<String, dynamic>>();
+    } catch (e) {
+      print('Error obteniendo calificaciones: $e');
+      return [];
+    }
+  }
 }

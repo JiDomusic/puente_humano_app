@@ -16,12 +16,11 @@ class AnalyticsService {
       await _supabase.from('user_logs').insert({
         'user_id': userId,
         'action': action,
-        'details': details,
         'timestamp': DateTime.now().toIso8601String(),
         'ip_address': 'web', // En web no se puede obtener IP fácilmente
       });
     } catch (e) {
-      if (e.toString().contains('PGRST205') || e.toString().contains('404')) {
+      if (e.toString().contains('PGRST20') || e.toString().contains('404')) {
         _tablesExist = false;
         // Silenciar mensaje para producción - las tablas de analytics son opcionales
       } else {
@@ -44,7 +43,6 @@ class AnalyticsService {
         'user_id': userId,
         'error': error,
         'context': context,
-        'details': details,
         'timestamp': DateTime.now().toIso8601String(),
       });
     } catch (e) {
